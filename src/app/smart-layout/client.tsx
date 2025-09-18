@@ -75,14 +75,6 @@ export default function SmartLayoutClient() {
     }
   }, [state, addLogEntry]);
   
-  const onSubmit = (data: FormValues) => {
-    if (formRef.current) {
-        addLogEntry('Generating smart layout suggestions...');
-        const formData = new FormData(formRef.current);
-        formAction(formData);
-    }
-  };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
       <Card>
@@ -96,7 +88,14 @@ export default function SmartLayoutClient() {
           <Form {...form}>
             <form
               ref={formRef}
-              onSubmit={form.handleSubmit(onSubmit)}
+              action={formAction}
+              onSubmit={form.handleSubmit(() => {
+                if (formRef.current) {
+                  addLogEntry('Generating smart layout suggestions...');
+                  const formData = new FormData(formRef.current);
+                  formAction(formData);
+                }
+              })}
               className="space-y-6"
             >
                 <FormField
@@ -146,7 +145,7 @@ export default function SmartLayoutClient() {
                             <FormItem>
                             <FormLabel>Discount (%)</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder="e.g., 15" {...field} value={field.value ?? 0} />
+                                <Input type="number" placeholder="e.g., 15" {...field} value={field.value ?? ''} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
