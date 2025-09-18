@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useRef, useState } from 'react';
+import { useActionState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -75,10 +75,11 @@ export default function SmartLayoutClient() {
     }
   }, [state, addLogEntry]);
   
-  const onSubmit = () => {
+  const onSubmit = (data: FormValues) => {
     if (formRef.current) {
         addLogEntry('Generating smart layout suggestions...');
-        formRef.current.requestSubmit();
+        const formData = new FormData(formRef.current);
+        formAction(formData);
     }
   };
 
@@ -95,7 +96,6 @@ export default function SmartLayoutClient() {
           <Form {...form}>
             <form
               ref={formRef}
-              action={formAction}
               onSubmit={form.handleSubmit(onSubmit)}
               className="space-y-6"
             >
@@ -146,7 +146,7 @@ export default function SmartLayoutClient() {
                             <FormItem>
                             <FormLabel>Discount (%)</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder="e.g., 15" {...field} value={field.value ?? ''} />
+                                <Input type="number" placeholder="e.g., 15" {...field} value={field.value ?? 0} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -214,6 +214,8 @@ export default function SmartLayoutClient() {
                                 <FormItem key={item.id} className="flex flex-row items-start space-x-3 space-y-0">
                                     <FormControl>
                                     <Checkbox
+                                        {...field}
+                                        value={item.id}
                                         checked={field.value?.includes(item.id)}
                                         onCheckedChange={(checked) => {
                                         return checked
