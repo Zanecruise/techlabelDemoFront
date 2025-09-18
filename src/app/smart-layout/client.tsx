@@ -273,7 +273,7 @@ export default function SmartLayoutClient() {
               <Card key={index}>
                 <CardHeader>
                   <CardTitle>Layout Option {index + 1}</CardTitle>
-                  <CardDescription>{suggestion.description}</CardDescription>
+                  <CardDescription>{suggestion.description}</CardHeader>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
@@ -302,7 +302,7 @@ export default function SmartLayoutClient() {
             <Card className="border-destructive">
                 <CardHeader>
                     <CardTitle className="text-destructive">Error</CardTitle>
-                </Header>
+                </CardHeader>
                 <CardContent>
                     <p>{state.message}</p>
                 </CardContent>
