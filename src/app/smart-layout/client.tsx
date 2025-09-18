@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useRef } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -65,7 +65,7 @@ export default function SmartLayoutClient() {
     },
   });
 
-  const { formState, handleSubmit } = form;
+  const { formState } = form;
 
   useEffect(() => {
     if (state.status === 'success') {
@@ -74,7 +74,7 @@ export default function SmartLayoutClient() {
       addLogEntry(`Smart layout generation failed: ${state.message}`);
     }
   }, [state, addLogEntry]);
-
+  
   const onSubmit = () => {
     if (formRef.current) {
         addLogEntry('Generating smart layout suggestions...');
@@ -96,7 +96,7 @@ export default function SmartLayoutClient() {
             <form
               ref={formRef}
               action={formAction}
-              onSubmit={handleSubmit(onSubmit)}
+              onSubmit={form.handleSubmit(onSubmit)}
               className="space-y-6"
             >
                 <FormField
@@ -217,7 +217,7 @@ export default function SmartLayoutClient() {
                                         checked={field.value?.includes(item.id)}
                                         onCheckedChange={(checked) => {
                                         return checked
-                                            ? field.onChange([...field.value, item.id])
+                                            ? field.onChange([...(field.value || []), item.id])
                                             : field.onChange(field.value?.filter((value) => value !== item.id));
                                         }}
                                     />
