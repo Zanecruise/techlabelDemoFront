@@ -96,7 +96,7 @@ export default function SmartLayoutClient() {
             <form
               ref={formRef}
               action={formAction}
-              onSubmit={handleSubmit(() => {})}
+              onSubmit={handleSubmit(onSubmit)}
               className="space-y-6"
             >
                 <FormField
@@ -245,7 +245,7 @@ export default function SmartLayoutClient() {
                         </FormItem>
                     )}
                 />
-                <Button type="button" className="w-full" disabled={formState.isSubmitting} onClick={onSubmit}>
+                <Button type="submit" className="w-full" disabled={formState.isSubmitting}>
                     {formState.isSubmitting ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
