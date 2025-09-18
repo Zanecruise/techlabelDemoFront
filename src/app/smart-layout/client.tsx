@@ -1,6 +1,6 @@
 'use client';
 
-import { useFormState } from 'react-dom';
+import { useActionState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,6 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useCommandLog } from '@/hooks/use-command-log';
 import React from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const formSchema = z.object({
   productName: z.string().min(2, 'Product name must be at least 2 characters.'),
@@ -48,7 +49,7 @@ const initialState: FormState = {
 };
 
 export default function SmartLayoutClient() {
-  const [state, formAction] = useFormState(getLayoutSuggestions, initialState);
+  const [state, formAction] = useActionState(getLayoutSuggestions, initialState);
   const { addLogEntry } = useCommandLog();
   const formRef = React.useRef<HTMLFormElement>(null);
 
