@@ -18,6 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import Link from 'next/link';
 
 type Status = 'linked' | 'unlinked';
 
@@ -134,9 +135,11 @@ export default function ProdutosClient() {
                 </div>
             ))}
         </div>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Adicionar produto
+        <Button asChild>
+          <Link href="/produtos/adicionar">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Adicionar produto
+          </Link>
         </Button>
       </CardFooter>
     </Card>
