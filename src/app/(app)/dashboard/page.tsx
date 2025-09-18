@@ -1,3 +1,5 @@
+'use client';
+
 import { ChartPie, Package, History, Mail, Phone } from 'lucide-react';
 import {
   Card,
