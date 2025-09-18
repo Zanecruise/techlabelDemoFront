@@ -1,0 +1,58 @@
+import type { Product } from './types';
+
+export const products: Product[] = [
+  {
+    id: 'prod_001',
+    name: 'Organic Avocados',
+    category: 'Produce',
+    price: 1.99,
+    description: 'Fresh, creamy, and organically grown Hass avocados. Perfect for toast, salads, and guacamole.',
+    imageUrl: 'https://picsum.photos/seed/avocado/400/300',
+    imageHint: 'avocado fruit',
+  },
+  {
+    id: 'prod_002',
+    name: 'Artisanal Sourdough Bread',
+    category: 'Bakery',
+    price: 5.49,
+    description: 'Handcrafted sourdough loaf with a tangy flavor and a crisp crust. Made with locally sourced flour.',
+    imageUrl: 'https://picsum.photos/seed/bread/400/300',
+    imageHint: 'sourdough bread',
+  },
+  {
+    id: 'prod_003',
+    name: 'Free-Range Chicken Eggs',
+    category: 'Dairy & Eggs',
+    price: 4.29,
+    description: 'One dozen large brown eggs from free-range chickens. Rich yolks and excellent flavor.',
+    imageUrl: 'https://picsum.photos/seed/eggs/400/300',
+    imageHint: 'eggs carton',
+  },
+  {
+    id: 'prod_004',
+    name: 'Cold Brew Coffee Concentrate',
+    category: 'Beverages',
+    price: 8.99,
+    description: 'Smooth and bold cold brew coffee concentrate. Just mix with water or milk. Makes 8 servings.',
+    imageUrl: 'https://picsum.photos/seed/coffee/400/300',
+    imageHint: 'coffee bottle',
+  },
+  {
+    id: 'prod_005',
+    name: 'Sharp Cheddar Cheese Block',
+    category: 'Cheese',
+    price: 6.79,
+    description: 'Aged for over 12 months, this sharp cheddar block offers a complex and nutty flavor. 8 oz block.',
+    imageUrl: 'https://picsum.photos/seed/cheese/400/300',
+    imageHint: 'cheddar cheese',
+  },
+  {
+    id: 'prod_006',
+    name: 'Gourmet Dark Chocolate Bar',
+    category: 'Snacks',
+    price: 3.99,
+    description: '72% cacao dark chocolate bar with notes of sea salt and almond. Fair trade and organic.',
+    imageUrl: 'https://picsum.photos/seed/chocolate/400/300',
+    imageHint: 'chocolate bar',
+  },
+];
