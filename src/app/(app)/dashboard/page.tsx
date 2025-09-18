@@ -16,6 +16,8 @@ import {
 import { Label, Pie, PieChart } from 'recharts';
 import Header from '@/components/layout/header';
 import { List, ListItem } from '@/components/ui/list';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 const chartData = [
   { browser: 'chrome', visitors: 275, fill: 'var(--color-chrome)' },
@@ -42,9 +44,21 @@ const chartConfig = {
 };
 
 const historyItems = [
-  { id: 0, text: 'Edição de Produto', status: 'success' },
-  { id: 1, text: 'Edição de Template de Etiqueta', status: 'success' },
-  { id: 2, text: 'Edição de Produto', status: 'warning' },
+  {
+    id: 0,
+    detail: 'Exclusão de Produto',
+    status: 'success',
+  },
+  {
+    id: 1,
+    detail: 'Edição de Template de Etiqueta',
+    status: 'success',
+  },
+  {
+    id: 2,
+    detail: 'Edição de Produto',
+    status: 'warning',
+  },
 ];
 
 export default function DashboardPage() {
@@ -174,29 +188,38 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center">
               <History className="mr-2" />
               Histórico
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1">
             <List>
               {historyItems.map((item) => (
-                <ListItem key={item.id} className="flex justify-between">
-                  <span>{item.text}</span>
-                  <span
-                    className={`h-3 w-3 rounded-full ${
+                <ListItem key={item.id} className="flex justify-between items-center">
+                  <span>{item.detail}</span>
+                  <div
+                    className={`h-4 w-4 rounded-full border-2 ${
                       item.status === 'success'
                         ? 'bg-green-500'
-                        : 'bg-yellow-500'
+                        : item.status === 'warning'
+                        ? 'bg-yellow-500'
+                        : 'bg-red-500'
                     }`}
                   />
                 </ListItem>
               ))}
             </List>
           </CardContent>
+          <div className="p-6 pt-0">
+             <Button asChild className="w-full">
+                <Link href="/historico">
+                    Ver histórico completo
+                </Link>
+             </Button>
+          </div>
         </Card>
 
         <Card>
