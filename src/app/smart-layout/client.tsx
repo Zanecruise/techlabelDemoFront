@@ -273,7 +273,7 @@ export default function SmartLayoutClient() {
               <Card key={index}>
                 <CardHeader>
                   <CardTitle>Layout Option {index + 1}</CardTitle>
-                  <CardDescription>{suggestion.description}</CardHeader>
+                  <CardDescription>{suggestion.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
