@@ -37,7 +37,6 @@ const navItems = [
   { href: '/etiquetas', label: 'Etiquetas', icon: Tag },
   { href: '/produtos', label: 'Produtos', icon: Package },
   { href: '/historico', label: 'Histórico', icon: History },
-  { href: '/integracao', label: 'Integração', icon: GitBranch },
 ];
 
 export default function Sidebar() {
