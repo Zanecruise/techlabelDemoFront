@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,13 +10,11 @@ import { getLayoutSuggestions, FormState } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useCommandLog } from '@/hooks/use-command-log';
-import React from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const formSchema = z.object({
@@ -51,7 +49,7 @@ const initialState: FormState = {
 export default function SmartLayoutClient() {
   const [state, formAction] = useActionState(getLayoutSuggestions, initialState);
   const { addLogEntry } = useCommandLog();
-  const formRef = React.useRef<HTMLFormElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -59,6 +57,7 @@ export default function SmartLayoutClient() {
       productName: '',
       productDescription: '',
       price: 0,
+      discount: 0,
       essentialInformation: ['product name', 'price'],
       constraints: 'Prioritize price visibility and include promotional message.',
       displaySize: '2.9 inch',
@@ -66,18 +65,22 @@ export default function SmartLayoutClient() {
     },
   });
 
-  const onSubmit = (formData: FormData) => {
-    formAction(formData);
-    addLogEntry('Generating smart layout suggestions...');
-  };
-  
-  React.useEffect(() => {
+  const { formState, handleSubmit } = form;
+
+  useEffect(() => {
     if (state.status === 'success') {
       addLogEntry('Smart layout suggestions generated successfully.');
     } else if (state.status === 'error') {
       addLogEntry(`Smart layout generation failed: ${state.message}`);
     }
   }, [state, addLogEntry]);
+
+  const onSubmit = () => {
+    if (formRef.current) {
+        addLogEntry('Generating smart layout suggestions...');
+        formRef.current.requestSubmit();
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
@@ -90,7 +93,12 @@ export default function SmartLayoutClient() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form ref={formRef} action={onSubmit} className="space-y-6">
+            <form
+              ref={formRef}
+              action={formAction}
+              onSubmit={handleSubmit(() => {})}
+              className="space-y-6"
+            >
                 <FormField
                     control={form.control}
                     name="productName"
@@ -138,7 +146,7 @@ export default function SmartLayoutClient() {
                             <FormItem>
                             <FormLabel>Discount (%)</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder="e.g., 15" {...field} />
+                                <Input type="number" placeholder="e.g., 15" {...field} value={field.value ?? ''} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -237,8 +245,8 @@ export default function SmartLayoutClient() {
                         </FormItem>
                     )}
                 />
-                <Button type="submit" className="w-full" disabled={form.formState.isSubmitting} onClick={() => form.handleSubmit(() => formRef.current?.requestSubmit())()}>
-                    {form.formState.isSubmitting ? (
+                <Button type="button" className="w-full" disabled={formState.isSubmitting} onClick={onSubmit}>
+                    {formState.isSubmitting ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
                         <Sparkles className="mr-2 h-4 w-4" />
@@ -252,7 +260,7 @@ export default function SmartLayoutClient() {
       
       <div className="space-y-4">
         <h2 className="text-2xl font-bold flex items-center"><Bot className="mr-2" /> AI Suggestions</h2>
-        {form.formState.isSubmitting ? (
+        {formState.isSubmitting ? (
             <div className="space-y-4">
                 <Card><CardContent className="p-6"><Skeleton className="h-24 w-full" /></CardContent></Card>
                 <Card><CardContent className="p-6"><Skeleton className="h-24 w-full" /></CardContent></Card>
@@ -293,7 +301,7 @@ export default function SmartLayoutClient() {
             <Card className="border-destructive">
                 <CardHeader>
                     <CardTitle className="text-destructive">Error</CardTitle>
-                </CardHeader>
+                </Header>
                 <CardContent>
                     <p>{state.message}</p>
                 </CardContent>
