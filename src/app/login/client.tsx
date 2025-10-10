@@ -36,7 +36,14 @@ export default function LoginClient() {
   const handleLogin = () => {
     if (email && password) {
       setIsLoggingIn(true);
-      initiateEmailSignIn(auth, email, password);
+      initiateEmailSignIn(auth, email, password, () => {
+        setIsLoggingIn(false);
+        toast({
+            variant: 'destructive',
+            title: 'Login Falhou',
+            description: 'E-mail ou senha inválidos. Por favor, tente novamente.'
+        });
+      });
     } else {
       toast({
         variant: 'destructive',
