@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import Link from 'next/link';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 
 type Status = 'linked' | 'unlinked';
@@ -33,10 +33,16 @@ export default function ProdutosClient() {
   const [searchTerm, setSearchTerm] = useState('');
   const firestore = useFirestore();
   
-  const productsCollection = collection(firestore, 'products');
+  const productsCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'products');
+  }, [firestore]);
   const { data: products, isLoading: isLoadingProducts } = useCollection(productsCollection);
   
-  const labelsCollection = collection(firestore, 'labels');
+  const labelsCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'labels');
+  }, [firestore]);
   const { data: labels, isLoading: isLoadingLabels } = useCollection(labelsCollection);
 
   const getLabelMacAddress = (labelId: string) => {
