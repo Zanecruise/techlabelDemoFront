@@ -9,7 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { format } from 'date-fns';
 
@@ -23,7 +23,10 @@ const statusConfig = {
 
 export default function HistoricoClient() {
   const firestore = useFirestore();
-  const historyCollection = collection(firestore, 'command_logs');
+  const historyCollection = useMemoFirebase(() => {
+      if (!firestore) return null;
+      return collection(firestore, 'command_logs');
+  }, [firestore]);
   const { data: historyItems, isLoading } = useCollection(historyCollection);
   
   const getStatus = (detail: string): Status => {
