@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { ClipboardCheck, Loader2 } from 'lucide-react';
 import { useAuth, initiateEmailSignIn, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function LoginClient() {
   const [email, setEmail] = useState('');
@@ -25,11 +26,17 @@ export default function LoginClient() {
   const { user, isUserLoading } = useUser();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
+  useEffect(() => {
+    if (user && !isUserLoading) {
+        setIsLoggingIn(false);
+        router.push('/dashboard');
+    }
+  }, [user, isUserLoading, router]);
+
   const handleLogin = () => {
     if (email && password) {
       setIsLoggingIn(true);
       initiateEmailSignIn(auth, email, password);
-      // The onAuthStateChanged listener in FirebaseProvider will handle the redirect
     } else {
       toast({
         variant: 'destructive',
@@ -38,11 +45,22 @@ export default function LoginClient() {
       });
     }
   };
-  
-  if (!isUserLoading && user) {
-    router.push('/dashboard');
-  }
 
+  // Prevent flicker/redirect for already logged in users on initial load
+  if (isUserLoading) {
+      return (
+        <main className="flex min-h-screen items-center justify-center bg-background p-4">
+            <Loader2 className="animate-spin h-16 w-16 text-primary" />
+        </main>
+      )
+  }
+  
+  if (user) {
+    // If user is already logged in (and not loading), redirect immediately.
+    // This is handled by the useEffect, but this is a fallback.
+    router.push('/dashboard');
+    return null;
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -81,12 +99,13 @@ export default function LoginClient() {
                 placeholder="Sua senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
               />
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full" onClick={handleLogin} disabled={isLoggingIn || isUserLoading}>
-              {isLoggingIn || isUserLoading ? <Loader2 className="animate-spin" /> : 'Continuar'}
+            <Button className="w-full" onClick={handleLogin} disabled={isLoggingIn}>
+              {isLoggingIn ? <Loader2 className="animate-spin" /> : 'Continuar'}
             </Button>
           </CardFooter>
         </Card>
