@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useFirestore, addDocumentNonBlocking, useCollection, updateDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
+import { useFirestore, addDocumentNonBlocking, useCollection, updateDocumentNonBlocking, setDocumentNonBlocking, useMemoFirebase } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -23,9 +23,12 @@ export default function AdicionarProdutoClient() {
   const [gtin, setGtin] = useState('');
   const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
 
-  const labelsCollection = collection(firestore, 'labels');
-  // Query for labels that are not associated with any product yet
-  const unassignedLabelsQuery = query(labelsCollection, where('productId', '==', null));
+  const unassignedLabelsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    // Query for labels that are not associated with any product yet
+    return query(collection(firestore, 'labels'), where('productId', '==', null));
+  }, [firestore]);
+  
   const { data: availableLabels, isLoading: isLoadingLabels } = useCollection(unassignedLabelsQuery);
 
   const handleSubmit = async (e: React.FormEvent) => {
