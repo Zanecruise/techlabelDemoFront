@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Table,
@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
 type Status = 'linked' | 'unlinked' | 'error';
@@ -34,7 +34,12 @@ const statusConfig = {
 export default function EtiquetasClient() {
   const [searchTerm, setSearchTerm] = useState('');
   const firestore = useFirestore();
-  const labelsCollection = collection(firestore, 'labels');
+  
+  const labelsCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'labels');
+  }, [firestore]);
+
   const { data: labels, isLoading } = useCollection(labelsCollection);
 
   const getStatus = (label: any): Status => {
