@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useFirestore, addDocumentNonBlocking } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useFirestore, addDocumentNonBlocking, useCollection, updateDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
+import { collection, doc, query, where } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function AdicionarProdutoClient() {
   const router = useRouter();
@@ -20,19 +21,25 @@ export default function AdicionarProdutoClient() {
   const [proportionalValue, setProportionalValue] = useState('');
   const [date, setDate] = useState('');
   const [gtin, setGtin] = useState('');
+  const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const labelsCollection = collection(firestore, 'labels');
+  // Query for labels that are not associated with any product yet
+  const unassignedLabelsQuery = query(labelsCollection, where('productId', '==', null));
+  const { data: availableLabels, isLoading: isLoadingLabels } = useCollection(unassignedLabelsQuery);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !price || !sku) {
-      // Simple validation
       alert('Por favor, preencha os campos Nome, Preço e SKU.');
       return;
     }
-
+    
+    // 1. Add the product
     const productsCollection = collection(firestore, 'products');
-    addDocumentNonBlocking(productsCollection, {
+    const newProductRef = await addDocumentNonBlocking(productsCollection, {
       name,
-      description: '', // Adding a default description
+      description: '', 
       price: parseFloat(price),
       sku,
       brand,
@@ -40,9 +47,19 @@ export default function AdicionarProdutoClient() {
       proportionalValue,
       date,
       gtin,
-      labelIds: [],
+      labelId: selectedLabelId,
     });
 
+    if (newProductRef && selectedLabelId) {
+        // 2. If a label was selected, update the label to link it to the new product
+        const labelRef = doc(firestore, 'labels', selectedLabelId);
+        updateDocumentNonBlocking(labelRef, { productId: newProductRef.id });
+
+        // 3. Update the product with the labelId
+        const productRef = doc(firestore, 'products', newProductRef.id);
+        updateDocumentNonBlocking(productRef, { labelId: selectedLabelId });
+    }
+    
     router.push('/produtos');
   };
 
@@ -110,6 +127,30 @@ export default function AdicionarProdutoClient() {
                 />
               </div>
             </div>
+            
+            <div className="space-y-2">
+                <Label htmlFor="label-select">Associar Etiqueta</Label>
+                 <Select onValueChange={setSelectedLabelId} value={selectedLabelId || ''}>
+                    <SelectTrigger id="label-select">
+                        <SelectValue placeholder={isLoadingLabels ? "A carregar etiquetas..." : "Selecione uma etiqueta disponível"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {isLoadingLabels ? (
+                            <SelectItem value="loading" disabled>A carregar...</SelectItem>
+                        ) : (
+                            availableLabels?.map((label: any) => (
+                                <SelectItem key={label.id} value={label.id}>
+                                    {label.macAddress}
+                                </SelectItem>
+                            ))
+                        )}
+                         {availableLabels?.length === 0 && !isLoadingLabels && (
+                             <SelectItem value="no-labels" disabled>Nenhuma etiqueta disponível</SelectItem>
+                         )}
+                    </SelectContent>
+                </Select>
+            </div>
+
 
             <div className="flex justify-end gap-4 pt-4">
               <Button

@@ -20,7 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import Link from 'next/link';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 
 type Status = 'linked' | 'unlinked';
 
@@ -32,14 +32,26 @@ const statusConfig = {
 export default function ProdutosClient() {
   const [searchTerm, setSearchTerm] = useState('');
   const firestore = useFirestore();
+  
   const productsCollection = collection(firestore, 'products');
-  const { data: products, isLoading } = useCollection(productsCollection);
+  const { data: products, isLoading: isLoadingProducts } = useCollection(productsCollection);
+  
+  const labelsCollection = collection(firestore, 'labels');
+  const { data: labels, isLoading: isLoadingLabels } = useCollection(labelsCollection);
+
+  const getLabelMacAddress = (labelId: string) => {
+    if (!labels) return '...';
+    const label = labels.find((l: any) => l.id === labelId);
+    return label ? label.macAddress : 'N/A';
+  }
 
   const filteredProducts = products?.filter(
-    (product) =>
+    (product: any) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
+  
+  const isLoading = isLoadingProducts || isLoadingLabels;
 
   if (isLoading) {
     return <div>A carregar...</div>
@@ -68,13 +80,14 @@ export default function ProdutosClient() {
                 <TableHead>Nome</TableHead>
                 <TableHead>SKU</TableHead>
                 <TableHead>Preço</TableHead>
+                <TableHead>Etiqueta (MAC)</TableHead>
                 <TableHead className="w-16 text-center">Editar</TableHead>
                 <TableHead className="w-16 text-center">Inativar</TableHead>
                 <TableHead className="w-24 text-center">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => (
+              {filteredProducts.map((product: any) => (
                 <TableRow key={product.id}>
                   <TableCell>
                     <div className="bg-accent text-accent-foreground rounded-md w-8 h-8 flex items-center justify-center font-semibold">
@@ -88,6 +101,7 @@ export default function ProdutosClient() {
                     </div>
                   </TableCell>
                   <TableCell>R$ {product.price}</TableCell>
+                  <TableCell>{product.labelId ? getLabelMacAddress(product.labelId) : <span className="text-muted-foreground">N/A</span>}</TableCell>
                   <TableCell className="text-center">
                     <Button variant="ghost" size="icon">
                       <Pencil className="h-4 w-4" />
@@ -100,7 +114,7 @@ export default function ProdutosClient() {
                     <div className="flex justify-center">
                       <div
                         className={`h-4 w-4 rounded-full border-2 ${
-                          statusConfig[product.labelIds?.length > 0 ? 'linked' : 'unlinked'].color
+                          statusConfig[product.labelId ? 'linked' : 'unlinked'].color
                         }`}
                       />
                     </div>

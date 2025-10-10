@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Pencil, Search, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Search, Trash2, PlusCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -45,7 +45,7 @@ export default function EtiquetasClient() {
 
   const filteredLabels = labels?.filter(
     (label: any) =>
-      (label.name && label.name.toLowerCase().includes(searchTerm.toLowerCase()))
+      (label.macAddress && label.macAddress.toLowerCase().includes(searchTerm.toLowerCase()))
   ) || [];
 
   if (isLoading) {
@@ -59,7 +59,7 @@ export default function EtiquetasClient() {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Pesquisar..."
+            placeholder="Pesquisar por Endereço MAC..."
             className="w-full pl-8"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -71,9 +71,8 @@ export default function EtiquetasClient() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-16">ID</TableHead>
-                <TableHead>Produto</TableHead>
-                <TableHead>SKU</TableHead>
+                <TableHead>Endereço MAC</TableHead>
+                <TableHead>Produto Vinculado</TableHead>
                 <TableHead className="w-24 text-center">Status</TableHead>
                 <TableHead className="w-24 text-center">Ações</TableHead>
               </TableRow>
@@ -83,15 +82,14 @@ export default function EtiquetasClient() {
                 const status = getStatus(label);
                 return (
                   <TableRow key={label.id}>
-                    <TableCell>{label.id.substring(0, 6)}</TableCell>
+                    <TableCell>{label.macAddress}</TableCell>
                     <TableCell>
-                      {label.name || (
+                      {label.productId || (
                         <span className="text-muted-foreground">
                           Nenhum produto vinculado
                         </span>
                       )}
                     </TableCell>
-                    <TableCell>{label.sku || 'N/A'}</TableCell>
                     <TableCell className="text-center">
                       <div className="flex justify-center">
                         <div
@@ -128,13 +126,21 @@ export default function EtiquetasClient() {
           </Table>
         </div>
       </CardContent>
-      <CardFooter className="flex items-center justify-start gap-6 pt-6">
-        {Object.values(statusConfig).map((s) => (
-          <div key={s.text} className="flex items-center gap-2">
-            <div className={`h-3 w-3 rounded-full ${s.color}`} />
-            <span className="text-sm text-muted-foreground">{s.text}</span>
-          </div>
-        ))}
+      <CardFooter className="flex items-center justify-between pt-6">
+        <div className="flex items-center gap-6">
+            {Object.values(statusConfig).map((s) => (
+            <div key={s.text} className="flex items-center gap-2">
+                <div className={`h-3 w-3 rounded-full ${s.color}`} />
+                <span className="text-sm text-muted-foreground">{s.text}</span>
+            </div>
+            ))}
+        </div>
+         <Button asChild>
+          <Link href="/etiquetas/adicionar">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Adicionar etiqueta
+          </Link>
+        </Button>
       </CardFooter>
     </Card>
   );

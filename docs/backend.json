@@ -43,12 +43,9 @@
         "gtin": {
             "type": "string"
         },
-        "labelIds": {
-          "type": "array",
-          "description": "References to Labels. (Relationship: Product 1:N Label)",
-          "items": {
-            "type": "string"
-          }
+        "labelId": {
+          "type": ["string", "null"],
+          "description": "Reference to a Label. (Relationship: Product 1:1 Label)"
         }
       },
       "required": [
@@ -69,24 +66,18 @@
           "type": "string",
           "description": "Unique identifier for the label."
         },
-        "name": {
+        "macAddress": {
           "type": "string",
-          "description": "Name of the label."
-        },
-        "layout": {
-          "type": "string",
-          "description": "Layout configuration for the label (e.g., JSON string)."
+          "description": "MAC address of the electronic shelf label."
         },
         "productId": {
-          "type": "string",
-          "description": "Reference to Product. (Relationship: Product 1:N Label)"
+          "type": ["string", "null"],
+          "description": "Reference to a Product. (Relationship: Label 1:1 Product)"
         }
       },
       "required": [
         "id",
-        "name",
-        "layout",
-        "productId"
+        "macAddress"
       ]
     },
     "CommandLog": {
