@@ -9,43 +9,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import { format } from 'date-fns';
 
 type Status = 'success' | 'warning' | 'error';
-
-const historyItems = [
-  {
-    id: 0,
-    detail: 'Exclusão de Produto',
-    dateTime: '10/04/2025 12:44:35',
-    product: '17',
-    label: '',
-    status: 'success' as Status,
-  },
-  {
-    id: 1,
-    detail: 'Edição de Template de Etiqueta',
-    dateTime: '10/04/2025 14:21:17',
-    product: '',
-    label: '11',
-    status: 'success' as Status,
-  },
-  {
-    id: 2,
-    detail: 'Edição de Produto',
-    dateTime: '11/04/2025 08:01:56',
-    product: '1',
-    label: '8',
-    status: 'warning' as Status,
-  },
-  {
-    id: 3,
-    detail: 'Tentativa de acesso a API negada',
-    dateTime: '11/04/2025 11:48:11',
-    product: '',
-    label: '',
-    status: 'error' as Status,
-  },
-];
 
 const statusConfig = {
   success: { color: 'bg-green-500', text: 'Sucesso' },
@@ -54,6 +22,24 @@ const statusConfig = {
 };
 
 export default function HistoricoClient() {
+  const firestore = useFirestore();
+  const historyCollection = collection(firestore, 'command_logs');
+  const { data: historyItems, isLoading } = useCollection(historyCollection);
+  
+  const getStatus = (detail: string): Status => {
+      if (detail.toLowerCase().includes('negada') || detail.toLowerCase().includes('fail')) {
+          return 'error';
+      }
+      if (detail.toLowerCase().includes('edição')) {
+          return 'warning';
+      }
+      return 'success';
+  }
+
+  if (isLoading) {
+    return <div>A carregar...</div>;
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -73,33 +59,32 @@ export default function HistoricoClient() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {historyItems.map((item) => (
+              {historyItems?.map((item: any) => {
+                const status = getStatus(item.details);
+                return (
                 <TableRow key={item.id}>
                   <TableCell>
                     <div className="bg-accent text-accent-foreground rounded-md w-8 h-8 flex items-center justify-center font-semibold">
-                      {item.id}
+                      {item.id.substring(0, 4)}
                     </div>
                   </TableCell>
-                  <TableCell>{item.detail}</TableCell>
-                  <TableCell>{item.dateTime}</TableCell>
-                  <TableCell>{item.product}</TableCell>
-                  <TableCell>{item.label}</TableCell>
+                  <TableCell>{item.details}</TableCell>
+                  <TableCell>{format(new Date(item.timestamp), 'dd/MM/yyyy HH:mm:ss')}</TableCell>
+                  <TableCell>{item.product || ''}</TableCell>
+                  <TableCell>{item.label || ''}</TableCell>
                   <TableCell>
                     <div className="flex justify-center">
                       <div
                         className={`h-4 w-4 rounded-full border-2 ${
-                          statusConfig[item.status].color
+                          statusConfig[status].color
                         }`}
                       />
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              )})}
             </TableBody>
           </Table>
-        </div>
-        <div className="mt-4 text-sm text-muted-foreground p-4 bg-accent rounded-md">
-            <p>O sistema registrou um acesso negado na API em 11/04/2025 as 11:48:11</p>
         </div>
       </CardContent>
       <CardFooter className="flex items-center justify-start gap-6 pt-6">

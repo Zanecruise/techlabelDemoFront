@@ -12,21 +12,37 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ClipboardCheck } from 'lucide-react';
+import { ClipboardCheck, Loader2 } from 'lucide-react';
+import { useAuth, initiateEmailSignIn, useUser } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 export default function LoginClient() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
+  const auth = useAuth();
+  const { toast } = useToast();
+  const { user, isUserLoading } = useUser();
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const handleLogin = () => {
-    // Basic validation
-    if (username && password) {
-      router.push('/dashboard');
+    if (email && password) {
+      setIsLoggingIn(true);
+      initiateEmailSignIn(auth, email, password);
+      // The onAuthStateChanged listener in FirebaseProvider will handle the redirect
     } else {
-      alert('Please enter username and password');
+      toast({
+        variant: 'destructive',
+        title: 'Erro de Login',
+        description: 'Por favor, insira o e-mail e a senha.',
+      });
     }
   };
+  
+  if (!isUserLoading && user) {
+    router.push('/dashboard');
+  }
+
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -48,12 +64,13 @@ export default function LoginClient() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Usuário</Label>
+              <Label htmlFor="email">E-mail</Label>
               <Input
-                id="username"
-                placeholder="Seu usuário"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -68,8 +85,8 @@ export default function LoginClient() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full" onClick={handleLogin}>
-              Continuar
+            <Button className="w-full" onClick={handleLogin} disabled={isLoggingIn || isUserLoading}>
+              {isLoggingIn || isUserLoading ? <Loader2 className="animate-spin" /> : 'Continuar'}
             </Button>
           </CardFooter>
         </Card>

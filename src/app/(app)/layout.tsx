@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Sidebar from '@/components/layout/sidebar';
-import { FirebaseClientProvider } from '@/firebase';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (

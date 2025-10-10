@@ -11,12 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import {
-  MoreHorizontal,
-  Pencil,
-  Search,
-  Trash2,
-} from 'lucide-react';
+import { MoreHorizontal, Pencil, Search, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -24,37 +19,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 type Status = 'linked' | 'unlinked' | 'error';
-
-const labels = [
-  {
-    id: '0',
-    product: 'Leite Integral 1L',
-    sku: '789456',
-    status: 'linked' as Status,
-  },
-  {
-    id: '1',
-    product: 'Bolacha Morango Trakinas',
-    sku: '451354',
-    status: 'linked' as Status,
-  },
-  {
-    id: '2',
-    product: 'Salgadinho 300g Doritos',
-    sku: '462318',
-    status: 'error' as Status,
-  },
-  {
-    id: '3',
-    product: '',
-    sku: '',
-    status: 'unlinked' as Status,
-  },
-];
 
 const statusConfig = {
   linked: { color: 'bg-green-500', text: 'Etiqueta com produto vinculado' },
@@ -64,12 +33,24 @@ const statusConfig = {
 
 export default function EtiquetasClient() {
   const [searchTerm, setSearchTerm] = useState('');
+  const firestore = useFirestore();
+  const labelsCollection = collection(firestore, 'labels');
+  const { data: labels, isLoading } = useCollection(labelsCollection);
 
-  const filteredLabels = labels.filter(
-    (label) =>
-      label.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      label.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getStatus = (label: any): Status => {
+    // This is a placeholder for more complex logic
+    if (label.productId) return 'linked';
+    return 'unlinked';
+  }
+
+  const filteredLabels = labels?.filter(
+    (label: any) =>
+      (label.name && label.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  ) || [];
+
+  if (isLoading) {
+    return <div>A carregar...</div>;
+  }
 
   return (
     <Card>
@@ -98,60 +79,61 @@ export default function EtiquetasClient() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredLabels.map((label) => (
-                <TableRow key={label.id}>
-                  <TableCell>{label.id}</TableCell>
-                  <TableCell>
-                    {label.product || (
-                      <span className="text-muted-foreground">
-                        Nenhum produto vinculado
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>{label.sku}</TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex justify-center">
+              {filteredLabels.map((label: any) => {
+                const status = getStatus(label);
+                return (
+                  <TableRow key={label.id}>
+                    <TableCell>{label.id.substring(0, 6)}</TableCell>
+                    <TableCell>
+                      {label.name || (
+                        <span className="text-muted-foreground">
+                          Nenhum produto vinculado
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>{label.sku || 'N/A'}</TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center">
                         <div
-                          className={`h-3 w-3 rounded-full ${
-                            statusConfig[label.status].color
-                          }`}
+                          className={`h-3 w-3 rounded-full ${statusConfig[status].color}`}
                         />
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/etiquetas/editar/${label.id}`}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Editar
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600 focus:text-red-600">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/etiquetas/editar/${label.id}`}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Editar
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
       </CardContent>
       <CardFooter className="flex items-center justify-start gap-6 pt-6">
         {Object.values(statusConfig).map((s) => (
-            <div key={s.text} className="flex items-center gap-2">
-                <div className={`h-3 w-3 rounded-full ${s.color}`} />
-                <span className="text-sm text-muted-foreground">{s.text}</span>
-            </div>
+          <div key={s.text} className="flex items-center gap-2">
+            <div className={`h-3 w-3 rounded-full ${s.color}`} />
+            <span className="text-sm text-muted-foreground">{s.text}</span>
+          </div>
         ))}
       </CardFooter>
     </Card>
