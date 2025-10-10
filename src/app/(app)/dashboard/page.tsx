@@ -1,10 +1,9 @@
 'use client';
 
-import { ChartPie, Package, History, Mail, Phone } from 'lucide-react';
+import { ChartPie, Package, History, Mail, Phone, Loader2 } from 'lucide-react';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -18,50 +17,90 @@ import Header from '@/components/layout/header';
 import { List, ListItem } from '@/components/ui/list';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-
-const chartData = [
-  { browser: 'chrome', visitors: 275, fill: 'var(--color-chrome)' },
-  { browser: 'safari', visitors: 200, fill: 'var(--color-safari)' },
-  { browser: 'firefox', visitors: 187, fill: 'var(--color-firefox)' },
-];
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, limit, orderBy, query } from 'firebase/firestore';
 
 const chartConfig = {
-  visitors: {
-    label: 'Visitors',
+  count: {
+    label: 'Count',
   },
-  chrome: {
-    label: 'Chrome',
+  linked: {
+    label: 'Vinculadas',
     color: 'hsl(var(--chart-1))',
   },
-  safari: {
-    label: 'Safari',
+  unlinked: {
+    label: 'Não Vinculadas',
     color: 'hsl(var(--chart-2))',
   },
-  firefox: {
-    label: 'Firefox',
-    color: 'hsl(var(--chart-3))',
+   withLabel: {
+    label: 'Com Etiqueta',
+    color: 'hsl(var(--chart-1))',
+  },
+  withoutLabel: {
+    label: 'Sem Etiqueta',
+    color: 'hsl(var(--chart-2))',
   },
 };
 
-const historyItems = [
-  {
-    id: 0,
-    detail: 'Exclusão de Produto',
-    status: 'success',
-  },
-  {
-    id: 1,
-    detail: 'Edição de Template de Etiqueta',
-    status: 'success',
-  },
-  {
-    id: 2,
-    detail: 'Edição de Produto',
-    status: 'warning',
-  },
-];
 
 export default function DashboardPage() {
+    const firestore = useFirestore();
+
+    const labelsCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'labels');
+    }, [firestore]);
+    const { data: labels, isLoading: isLoadingLabels } = useCollection(labelsCollection);
+
+    const productsCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'products');
+    }, [firestore]);
+    const { data: products, isLoading: isLoadingProducts } = useCollection(productsCollection);
+
+    const historyCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'command_logs'), orderBy('timestamp', 'desc'), limit(3));
+    }, [firestore]);
+    const { data: historyItems, isLoading: isLoadingHistory } = useCollection(historyCollection);
+    
+    const getStatus = (detail: string) => {
+      if (detail.toLowerCase().includes('negada') || detail.toLowerCase().includes('fail') || detail.toLowerCase().includes('failed')) {
+          return 'error';
+      }
+      if (detail.toLowerCase().includes('edição') || detail.toLowerCase().includes('generated') || detail.toLowerCase().includes('update')) {
+          return 'warning';
+      }
+      return 'success';
+  }
+
+
+    const labelsChartData = useMemoFirebase(() => {
+        if (!labels) return [];
+        const linked = labels.filter((label: any) => label.productId).length;
+        const unlinked = labels.length - linked;
+        return [
+            { name: 'linked', count: linked, fill: 'var(--color-linked)' },
+            { name: 'unlinked', count: unlinked, fill: 'var(--color-unlinked)' },
+        ];
+    }, [labels]);
+
+    const productsChartData = useMemoFirebase(() => {
+        if (!products) return [];
+        const withLabel = products.filter((product: any) => product.labelId).length;
+        const withoutLabel = products.length - withLabel;
+        return [
+            { name: 'withLabel', count: withLabel, fill: 'var(--color-withLabel)' },
+            { name: 'withoutLabel', count: withoutLabel, fill: 'var(--color-withoutLabel)' },
+        ];
+    }, [products]);
+    
+    const totalLabels = labels?.length || 0;
+    const totalProducts = products?.length || 0;
+    
+    const isLoading = isLoadingLabels || isLoadingProducts || isLoadingHistory;
+
+
   return (
     <div className="flex flex-col h-full">
       <Header title="Tela de Início" />
@@ -74,56 +113,58 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer
-              config={chartConfig}
-              className="mx-auto aspect-square max-h-[250px]"
-            >
-              <PieChart>
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent hideLabel />}
-                />
-                <Pie
-                  data={chartData}
-                  dataKey="visitors"
-                  nameKey="browser"
-                  innerRadius={60}
-                  strokeWidth={5}
+             {isLoading ? (
+                 <div className="flex justify-center items-center h-[250px]"><Loader2 className="animate-spin" /></div>
+             ) : (
+                <ChartContainer
+                config={chartConfig}
+                className="mx-auto aspect-square max-h-[250px]"
                 >
-                  <Label
-                    content={({ viewBox }) => {
-                      if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
-                        return (
-                          <text
-                            x={viewBox.cx}
-                            y={viewBox.cy}
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                          >
-                            <tspan
-                              x={viewBox.cx}
-                              y={viewBox.cy}
-                              className="fill-foreground text-3xl font-bold"
+                <PieChart>
+                    <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                    />
+                    <Pie
+                    data={labelsChartData}
+                    dataKey="count"
+                    nameKey="name"
+                    innerRadius={60}
+                    strokeWidth={5}
+                    >
+                    <Label
+                        content={({ viewBox }) => {
+                        if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
+                            return (
+                            <text
+                                x={viewBox.cx}
+                                y={viewBox.cy}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
                             >
-                              {chartData
-                                .reduce((acc, curr) => acc + curr.visitors, 0)
-                                .toLocaleString()}
-                            </tspan>
-                            <tspan
-                              x={viewBox.cx}
-                              y={(viewBox.cy || 0) + 24}
-                              className="fill-muted-foreground"
-                            >
-                              Total
-                            </tspan>
-                          </text>
-                        );
-                      }
-                    }}
-                  />
-                </Pie>
-              </PieChart>
-            </ChartContainer>
+                                <tspan
+                                x={viewBox.cx}
+                                y={viewBox.cy}
+                                className="fill-foreground text-3xl font-bold"
+                                >
+                                {totalLabels.toLocaleString()}
+                                </tspan>
+                                <tspan
+                                x={viewBox.cx}
+                                y={(viewBox.cy || 0) + 24}
+                                className="fill-muted-foreground"
+                                >
+                                Total
+                                </tspan>
+                            </text>
+                            );
+                        }
+                        }}
+                    />
+                    </Pie>
+                </PieChart>
+                </ChartContainer>
+             )}
           </CardContent>
         </Card>
 
@@ -135,6 +176,9 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
+             {isLoading ? (
+                 <div className="flex justify-center items-center h-[250px]"><Loader2 className="animate-spin" /></div>
+             ) : (
             <ChartContainer
               config={chartConfig}
               className="mx-auto aspect-square max-h-[250px]"
@@ -145,9 +189,9 @@ export default function DashboardPage() {
                   content={<ChartTooltipContent hideLabel />}
                 />
                 <Pie
-                  data={chartData}
-                  dataKey="visitors"
-                  nameKey="browser"
+                  data={productsChartData}
+                  dataKey="count"
+                  nameKey="name"
                   innerRadius={60}
                   strokeWidth={5}
                 >
@@ -166,9 +210,7 @@ export default function DashboardPage() {
                               y={viewBox.cy}
                               className="fill-foreground text-3xl font-bold"
                             >
-                              {chartData
-                                .reduce((acc, curr) => acc + curr.visitors, 0)
-                                .toLocaleString()}
+                              {totalProducts.toLocaleString()}
                             </tspan>
                             <tspan
                               x={viewBox.cx}
@@ -185,6 +227,7 @@ export default function DashboardPage() {
                 </Pie>
               </PieChart>
             </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -196,22 +239,34 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1">
-            <List>
-              {historyItems.map((item) => (
-                <ListItem key={item.id} className="flex justify-between items-center">
-                  <span>{item.detail}</span>
-                  <div
-                    className={`h-4 w-4 rounded-full border-2 ${
-                      item.status === 'success'
-                        ? 'bg-green-500'
-                        : item.status === 'warning'
-                        ? 'bg-yellow-500'
-                        : 'bg-red-500'
-                    }`}
-                  />
-                </ListItem>
-              ))}
-            </List>
+             {isLoading ? (
+                  <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin" /></div>
+             ) : (
+                <List>
+                {historyItems && historyItems.map((item: any) => {
+                    const status = getStatus(item.command);
+                    return(
+                    <ListItem key={item.id} className="flex justify-between items-center">
+                      <span className="truncate pr-4">{item.command}</span>
+                      <div
+                        className={`h-4 w-4 rounded-full border-2 flex-shrink-0 ${
+                          status === 'success'
+                            ? 'bg-green-500'
+                            : status === 'warning'
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }`}
+                      />
+                    </ListItem>
+                    )
+                })}
+                {historyItems?.length === 0 && (
+                    <div className="text-center text-muted-foreground py-10">
+                        Nenhum histórico encontrado.
+                    </div>
+                )}
+                </List>
+             )}
           </CardContent>
           <div className="p-6 pt-0">
              <Button asChild className="w-full">
@@ -240,4 +295,3 @@ export default function DashboardPage() {
       </main>
     </div>
   );
-}
