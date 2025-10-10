@@ -19,6 +19,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, limit, orderBy, query } from 'firebase/firestore';
+import { useMemo } from 'react';
 
 const chartConfig = {
   count: {
@@ -75,7 +76,7 @@ export default function DashboardPage() {
   }
 
 
-    const labelsChartData = useMemoFirebase(() => {
+    const labelsChartData = useMemo(() => {
         if (!labels) return [];
         const linked = labels.filter((label: any) => label.productId).length;
         const unlinked = labels.length - linked;
@@ -85,7 +86,7 @@ export default function DashboardPage() {
         ];
     }, [labels]);
 
-    const productsChartData = useMemoFirebase(() => {
+    const productsChartData = useMemo(() => {
         if (!products) return [];
         const withLabel = products.filter((product: any) => product.labelId).length;
         const withoutLabel = products.length - withLabel;
@@ -295,3 +296,4 @@ export default function DashboardPage() {
       </main>
     </div>
   );
+}
