@@ -36,7 +36,7 @@ export default function LoginClient() {
   const handleLogin = () => {
     if (email && password) {
       setIsLoggingIn(true);
-      initiateEmailSignIn(auth, email, password, () => {
+      initiateEmailSignIn(auth, email, password, (error) => {
         setIsLoggingIn(false);
         toast({
             variant: 'destructive',
@@ -53,14 +53,16 @@ export default function LoginClient() {
     }
   };
 
-  // Prevent flicker/redirect for already logged in users on initial load
-  if (isUserLoading || user) {
-      return (
+  // If user is already logged in, the AppLayout will handle redirection.
+  // Show a loader on this page only while the login process is active.
+  if (isUserLoading) {
+       return (
         <main className="flex min-h-screen items-center justify-center bg-background p-4">
             <Loader2 className="animate-spin h-16 w-16 text-primary" />
         </main>
       )
   }
+
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-4">
