@@ -19,32 +19,10 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import Link from 'next/link';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 type Status = 'linked' | 'unlinked';
-
-const products = [
-  {
-    id: '0',
-    name: 'Rosquinha chocolate Ninfa',
-    sku: '123456',
-    price: 'R$ 23,90',
-    status: 'linked' as Status,
-  },
-  {
-    id: '1',
-    name: 'Desodorante Rexona',
-    sku: '451354',
-    price: 'R$ 23,90',
-    status: 'unlinked' as Status,
-  },
-  {
-    id: '2',
-    name: 'Creme Dental Sorriso',
-    sku: '462318',
-    price: 'R$ 23,90',
-    status: 'unlinked' as Status,
-  },
-];
 
 const statusConfig = {
   linked: { color: 'bg-green-500', text: 'Produto vinculado à uma etiqueta' },
@@ -53,12 +31,19 @@ const statusConfig = {
 
 export default function ProdutosClient() {
   const [searchTerm, setSearchTerm] = useState('');
+  const firestore = useFirestore();
+  const productsCollection = collection(firestore, 'products');
+  const { data: products, isLoading } = useCollection(productsCollection);
 
-  const filteredProducts = products.filter(
+  const filteredProducts = products?.filter(
     (product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) || [];
+
+  if (isLoading) {
+    return <div>A carregar...</div>
+  }
 
   return (
     <Card>
@@ -93,7 +78,7 @@ export default function ProdutosClient() {
                 <TableRow key={product.id}>
                   <TableCell>
                     <div className="bg-accent text-accent-foreground rounded-md w-8 h-8 flex items-center justify-center font-semibold">
-                      {product.id}
+                      {product.id.substring(0, 4)}
                     </div>
                   </TableCell>
                   <TableCell>{product.name}</TableCell>
@@ -102,7 +87,7 @@ export default function ProdutosClient() {
                       {product.sku}
                     </div>
                   </TableCell>
-                  <TableCell>{product.price}</TableCell>
+                  <TableCell>R$ {product.price}</TableCell>
                   <TableCell className="text-center">
                     <Button variant="ghost" size="icon">
                       <Pencil className="h-4 w-4" />
@@ -115,7 +100,7 @@ export default function ProdutosClient() {
                     <div className="flex justify-center">
                       <div
                         className={`h-4 w-4 rounded-full border-2 ${
-                          statusConfig[product.status].color
+                          statusConfig[product.labelIds?.length > 0 ? 'linked' : 'unlinked'].color
                         }`}
                       />
                     </div>

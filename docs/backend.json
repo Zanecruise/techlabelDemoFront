@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Product": {
@@ -22,6 +23,26 @@
           "type": "number",
           "description": "Price of the product."
         },
+        "sku": {
+            "type": "string",
+            "description": "Stock Keeping Unit."
+        },
+        "brand": {
+            "type": "string"
+        },
+        "promoPrice": {
+            "type": ["number", "null"]
+        },
+        "proportionalValue": {
+            "type": "string"
+        },
+        "date": {
+            "type": "string",
+            "format": "date"
+        },
+        "gtin": {
+            "type": "string"
+        },
         "labelIds": {
           "type": "array",
           "description": "References to Labels. (Relationship: Product 1:N Label)",
@@ -34,7 +55,8 @@
         "id",
         "name",
         "description",
-        "price"
+        "price",
+        "sku"
       ]
     },
     "Label": {
