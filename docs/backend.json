@@ -1,0 +1,217 @@
+{
+  "entities": {
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product with associated labels and pricing information.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the product."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the product."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the product."
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the product."
+        },
+        "labelIds": {
+          "type": "array",
+          "description": "References to Labels. (Relationship: Product 1:N Label)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "price"
+      ]
+    },
+    "Label": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Label",
+      "type": "object",
+      "description": "Represents a label associated with a product.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the label."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the label."
+        },
+        "layout": {
+          "type": "string",
+          "description": "Layout configuration for the label (e.g., JSON string)."
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to Product. (Relationship: Product 1:N Label)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "layout",
+        "productId"
+      ]
+    },
+    "CommandLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CommandLog",
+      "type": "object",
+      "description": "Represents a log entry for a command, alteration, or sync operation.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the log entry."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the command was executed.",
+          "format": "date-time"
+        },
+        "command": {
+          "type": "string",
+          "description": "The command that was executed."
+        },
+        "details": {
+          "type": "string",
+          "description": "Details about the command execution (e.g., parameters, results)."
+        }
+      },
+      "required": [
+        "id",
+        "timestamp",
+        "command",
+        "details"
+      ]
+    },
+    "Theme": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Theme",
+      "type": "object",
+      "description": "Represents a visual theme for the application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the theme."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the theme."
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary color of the theme (e.g., hex code)."
+        },
+        "backgroundColor": {
+          "type": "string",
+          "description": "Background color of the theme."
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Accent color of the theme."
+        },
+        "fontFamily": {
+          "type": "string",
+          "description": "Font family used in the theme."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "primaryColor",
+        "backgroundColor",
+        "accentColor",
+        "fontFamily"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Stores product information.  `productId` is the document ID.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "The unique identifier of the product."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/labels/{labelId}",
+        "definition": {
+          "entityName": "Label",
+          "schema": {
+            "$ref": "#/backend/entities/Label"
+          },
+          "description": "Stores label information. `labelId` is the document ID. Contains the `productId` field which references the parent product.",
+          "params": [
+            {
+              "name": "labelId",
+              "description": "The unique identifier of the label."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/command_logs/{commandLogId}",
+        "definition": {
+          "entityName": "CommandLog",
+          "schema": {
+            "$ref": "#/backend/entities/CommandLog"
+          },
+          "description": "Stores command log entries. `commandLogId` is the document ID.",
+          "params": [
+            {
+              "name": "commandLogId",
+              "description": "The unique identifier of the command log entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/themes/{themeId}",
+        "definition": {
+          "entityName": "Theme",
+          "schema": {
+            "$ref": "#/backend/entities/Theme"
+          },
+          "description": "Stores theme information. `themeId` is the document ID.",
+          "params": [
+            {
+              "name": "themeId",
+              "description": "The unique identifier of the theme."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to persist data for the LabelSync application. The structure prioritizes authorization independence and simplicity for security rules. \n\n1.  **Products and Labels:** Products and Labels are stored in top-level collections. Labels reference their parent Product via the `productId` field. While this creates a potential `get()` in security rules, the application design doesn't explicitly require security rules on Labels other than ownership, so this is acceptable. If more complex security rules are needed, `productId` and other relevant Product data can be denormalized into the Label documents.\n2.  **Command Logs:** CommandLogs are stored in a top-level collection. These are append-only logs, so security focuses on restricting write access.\n3.  **Themes:** Themes are stored in a top-level collection. These are globally accessible and managed by admins (role not defined, but would require an admin role collection).\n\n**Authorization Independence:** This design minimizes the need for `get()` calls in security rules. The `labels` subcollection could potentially require a `get()` call to verify the existence or attributes of the parent product. However, the explicit `productId` field within each `Label` document allows for ownership-based security rules without needing to fetch the `Product` document. Should any attribute from `Products` be necessary for Labels authorization, those must be denormalized onto the `Label` documents.\n\n**QAPs Support:** The structure supports Query-based Access Patterns (QAPs) effectively:\n\n*   Listing Products: Can be done directly on the `/products` collection.\n*   Listing Labels for a Product: Can be done with a simple query on the `/labels` collection, filtering by `productId`.\n\nSince no user-specific data or collaborative access is described in the request, the data structure is relatively straightforward. However, if user-specific preferences, settings, or draft content were introduced, these would be stored under `/users/{userId}/...` to maintain clear ownership."
+  }
+}

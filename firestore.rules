@@ -1,0 +1,91 @@
+/**
+ * @fileoverview Firestore Security Rules for the LabelSync application.
+ *
+ * Core Philosophy:
+ * This ruleset provides baseline security for data persistence in a Firestore database, focusing on simplicity and explicit access control.
+ * It defaults to public read access for all collections, combined with owner-only or admin-only writes.
+ *
+ * Data Structure:
+ * - /products/{productId}: Stores product information.
+ * - /labels/{labelId}: Stores label information, referencing the parent product via 'productId'.
+ * - /command_logs/{commandLogId}: Stores command logs.
+ * - /themes/{themeId}: Stores theme information.
+ *
+ * Key Security Decisions:
+ * - Public Read Access: All collections allow public read access (`get` and `list`).
+ * - Products and Labels: Write access is open due to lack of specified ownership.
+ * - Command Logs: Write access is denied to all users, effectively making them append-only by server-side processes.
+ * - Themes: Write access is open due to lack of specified admin role and ownership.
+ *
+ * Denormalization for Authorization:
+ * - The 'Label' entity includes a 'productId' field, denormalizing the relationship to the parent 'Product'. This avoids the need for `get()` calls to the `products` collection when evaluating label-related rules and filtering `labels` queries by `productId`.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Allows public read access and open write access to product information.
+     * @path /products/{productId}
+     * @allow get, list: if true;
+     * @allow create: if true;
+     * @allow update: if true;
+     * @allow delete: if true;
+     * @principle Allows public read access to all products with open write access.
+     */
+    match /products/{productId} {
+      allow get, list: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    /**
+     * @description Allows public read access and open write access to label information.
+     * @path /labels/{labelId}
+     * @allow get, list: if true;
+     * @allow create: if true;
+     * @allow update: if true;
+     * @allow delete: if true;
+     * @principle Allows public read access to all labels with open write access.
+     */
+    match /labels/{labelId} {
+      allow get, list: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    /**
+     * @description Allows public read access but denies write access to command logs.
+     * @path /command_logs/{commandLogId}
+     * @allow get, list: if true;
+     * @allow create: if false;
+     * @allow update: if false;
+     * @allow delete: if false;
+     * @principle Allows public read access to all command logs but restricts write access to prevent modifications.
+     */
+    match /command_logs/{commandLogId} {
+      allow get, list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Allows public read access and open write access to theme information.
+     * @path /themes/{themeId}
+     * @allow get, list: if true;
+     * @allow create: if true;
+     * @allow update: if true;
+     * @allow delete: if true;
+     * @principle Allows public read access to all themes with open write access.
+     */
+    match /themes/{themeId} {
+      allow get, list: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
+  }
+}
