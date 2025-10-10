@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Home,
   Tag,
@@ -12,12 +12,6 @@ import {
   ClipboardCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +25,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
+import { useAuth } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
 
 const navItems = [
   { href: '/dashboard', label: 'Início', icon: Home },
@@ -41,6 +38,27 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const auth = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/'); // Redirect to login page after sign out
+      toast({
+        title: 'Desconectado',
+        description: 'Você saiu da sua conta com sucesso.',
+      });
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Não foi possível fazer logout. Tente novamente.',
+      });
+    }
+  };
 
   return (
     <aside className="w-64 flex flex-col bg-card border-r p-4">
@@ -84,9 +102,7 @@ export default function Sidebar() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Não</AlertDialogCancel>
-              <AlertDialogAction asChild>
-                <Link href="/">Sim</Link>
-              </AlertDialogAction>
+              <AlertDialogAction onClick={handleLogout}>Sim</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
