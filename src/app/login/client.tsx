@@ -54,19 +54,12 @@ export default function LoginClient() {
   };
 
   // Prevent flicker/redirect for already logged in users on initial load
-  if (isUserLoading) {
+  if (isUserLoading || user) {
       return (
         <main className="flex min-h-screen items-center justify-center bg-background p-4">
             <Loader2 className="animate-spin h-16 w-16 text-primary" />
         </main>
       )
-  }
-  
-  if (user) {
-    // If user is already logged in (and not loading), redirect immediately.
-    // This is handled by the useEffect, but this is a fallback.
-    router.push('/dashboard');
-    return null;
   }
 
   return (
