@@ -1,82 +1,83 @@
 /**
- * @file Overview
- * This ruleset enforces a basic data access model with an emphasis on ownership and admin-controlled data.
- * Data Structure:
- * - /products/{productId}: Stores product information, accessible to all for reading, but write access is restricted.
- * - /labels/{labelId}: Stores label information, accessible to all for reading, but write access is restricted.
- * - /command_logs/{commandLogId}: Stores command logs, with restricted write access.
- * - /themes/{themeId}: Stores themes, accessible to all for reading, but write access is restricted to admins.
- * - /product_label_designs/{designLinkId}: Stores the selected design for a product's label.
- *
- * Key Security Decisions:
- * - Public read access is allowed on /products, /labels, and /themes.
- * - Write access to /products, /labels, /command_logs, and /product_label_designs is restricted.  An admin role is required (unimplemented).
- * - No user listing is permitted.
- *
- * Denormalization for Authorization:
- * - The ruleset avoids `get()` calls by relying on the `productId` field within `Label` documents.
+ * @file Firestore Security Rules
+ * @description This ruleset allows any logged-in user full access to all data. This is intended for rapid prototyping and should be replaced with more restrictive rules in a production environment.
+ * @dataStructure
+ *   - /products/{productId}: Stores product information.
+ *   - /labels/{labelId}: Stores label information.
+ *   - /command_logs/{commandLogId}: Stores command logs.
+ *   - /themes/{themeId}: Stores theme information.
+ *   - /product_label_designs/{designLinkId}: Stores links between products, labels, and designs.
+ * @keySecurityDecisions
+ *   - All authenticated users have full read and write access.
+ *   - No schema validation is performed in this prototype ruleset.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows anyone to read product information, but restricts writes.
+     * @description Grants all authenticated users full access to product data.
      * @path /products/{productId}
-     * @allow (get, list)
-     * @deny (create, update, delete)
-     * @principle Allows public read access but restricts writes to prevent unauthorized modifications.
+     * @allow (create, update, delete, get, list) - Any logged-in user can create, update, delete, retrieve, and list products.
+     * @deny (none) - No requests are denied in this prototype.
+     * @principle Allows any authenticated user to fully manage product data for prototyping purposes.
      */
     match /products/{productId} {
-      allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Implement admin role check
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Allows anyone to read label information, but restricts writes.
+     * @description Grants all authenticated users full access to label data.
      * @path /labels/{labelId}
-     * @allow (get, list)
-     * @deny (create, update, delete)
-     * @principle Allows public read access but restricts writes to prevent unauthorized modifications.
+     * @allow (create, update, delete, get, list) - Any logged-in user can create, update, delete, retrieve, and list labels.
+     * @deny (none) - No requests are denied in this prototype.
+     * @principle Allows any authenticated user to fully manage label data for prototyping purposes.
      */
     match /labels/{labelId} {
-      allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Implement admin role check
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Restricts all access to command logs.
+     * @description Grants all authenticated users full access to command log data.
      * @path /command_logs/{commandLogId}
-     * @allow None
-     * @deny (create, get, list, update, delete)
-     * @principle Restricts access to command logs.
+     * @allow (create, update, delete, get, list) - Any logged-in user can create, update, delete, retrieve, and list command logs.
+     * @deny (none) - No requests are denied in this prototype.
+     * @principle Allows any authenticated user to fully manage command log data for prototyping purposes.
      */
     match /command_logs/{commandLogId} {
-      allow get, list, create, update, delete: if false;
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Allows anyone to read theme information, but restricts writes to admins.
+     * @description Grants all authenticated users full access to theme data.
      * @path /themes/{themeId}
-     * @allow (get, list)
-     * @deny (create, update, delete)
-     * @principle Allows public read access but restricts writes to prevent unauthorized modifications.
+     * @allow (create, update, delete, get, list) - Any logged-in user can create, update, delete, retrieve, and list themes.
+     * @deny (none) - No requests are denied in this prototype.
+     * @principle Allows any authenticated user to fully manage theme data for prototyping purposes.
      */
     match /themes/{themeId} {
-      allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Implement admin role check
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
-    /**
-     * @description Allows anyone to read a product label design, but restricts writes.
-     * @path /product_label_designs/{designLinkId}
-     * @allow (get, list)
-     * @deny (create, update, delete)
-     * @principle Allows public read access but restricts writes to prevent unauthorized modifications.
-     */
+      /**
+       * @description Grants all authenticated users full access to product label design data.
+       * @path /product_label_designs/{designLinkId}
+       * @allow (create, update, delete, get, list) - Any logged-in user can create, update, delete, retrieve, and list product label designs.
+       * @deny (none) - No requests are denied in this prototype.
+       * @principle Allows any authenticated user to fully manage product label design data for prototyping purposes.
+       */
     match /product_label_designs/{designLinkId} {
-        allow get, list: if true;
-        allow create, update, delete: if false; // TODO: Implement admin role check
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
+    }
+
+    // Helper function to check if the user is signed in
+    function isSignedIn() {
+      return request.auth != null;
     }
   }
 }
