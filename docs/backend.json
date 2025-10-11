@@ -150,6 +150,20 @@
         "accentColor",
         "fontFamily"
       ]
+    },
+    "ProductLabelDesign": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ProductLabelDesign",
+      "type": "object",
+      "description": "Stores the selected design for a product's label.",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "labelId": { "type": "string" },
+        "designId": { "type": "string" },
+        "designData": { "type": "object" }
+      },
+      "required": ["productId", "labelId", "designId"]
     }
   },
   "auth": {
@@ -164,67 +178,48 @@
         "path": "/products/{productId}",
         "definition": {
           "entityName": "Product",
-          "schema": {
-            "$ref": "#/backend/entities/Product"
-          },
+          "schema": { "$ref": "#/backend/entities/Product" },
           "description": "Stores product information.  `productId` is the document ID.",
-          "params": [
-            {
-              "name": "productId",
-              "description": "The unique identifier of the product."
-            }
-          ]
+          "params": [{ "name": "productId", "description": "The unique identifier of the product." }]
         }
       },
       {
         "path": "/labels/{labelId}",
         "definition": {
           "entityName": "Label",
-          "schema": {
-            "$ref": "#/backend/entities/Label"
-          },
+          "schema": { "$ref": "#/backend/entities/Label" },
           "description": "Stores label information. `labelId` is the document ID. Contains the `productId` field which references the parent product.",
-          "params": [
-            {
-              "name": "labelId",
-              "description": "The unique identifier of the label."
-            }
-          ]
+          "params": [{ "name": "labelId", "description": "The unique identifier of the label." }]
         }
       },
       {
         "path": "/command_logs/{commandLogId}",
         "definition": {
           "entityName": "CommandLog",
-          "schema": {
-            "$ref": "#/backend/entities/CommandLog"
-          },
+          "schema": { "$ref": "#/backend/entities/CommandLog" },
           "description": "Stores command log entries. `commandLogId` is the document ID.",
-          "params": [
-            {
-              "name": "commandLogId",
-              "description": "The unique identifier of the command log entry."
-            }
-          ]
+          "params": [{ "name": "commandLogId", "description": "The unique identifier of the command log entry." }]
         }
       },
       {
         "path": "/themes/{themeId}",
         "definition": {
           "entityName": "Theme",
-          "schema": {
-            "$ref": "#/backend/entities/Theme"
-          },
+          "schema": { "$ref": "#/backend/entities/Theme" },
           "description": "Stores theme information. `themeId` is the document ID.",
-          "params": [
-            {
-              "name": "themeId",
-              "description": "The unique identifier of the theme."
-            }
-          ]
+          "params": [{ "name": "themeId", "description": "The unique identifier of the theme." }]
+        }
+      },
+      {
+        "path": "/product_label_designs/{designLinkId}",
+        "definition": {
+          "entityName": "ProductLabelDesign",
+          "schema": { "$ref": "#/backend/entities/ProductLabelDesign" },
+          "description": "Links a product and a label to a specific design. `designLinkId` is the document ID.",
+          "params": [{ "name": "designLinkId", "description": "The unique identifier for the design link." }]
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to persist data for the LabelSync application. The structure prioritizes authorization independence and simplicity for security rules. \n\n1.  **Products and Labels:** Products and Labels are stored in top-level collections. Labels reference their parent Product via the `productId` field. While this creates a potential `get()` in security rules, the application design doesn't explicitly require security rules on Labels other than ownership, so this is acceptable. If more complex security rules are needed, `productId` and other relevant Product data can be denormalized into the Label documents.\n2.  **Command Logs:** CommandLogs are stored in a top-level collection. These are append-only logs, so security focuses on restricting write access.\n3.  **Themes:** Themes are stored in a top-level collection. These are globally accessible and managed by admins (role not defined, but would require an admin role collection).\n\n**Authorization Independence:** This design minimizes the need for `get()` calls in security rules. The `labels` subcollection could potentially require a `get()` call to verify the existence or attributes of the parent product. However, the explicit `productId` field within each `Label` document allows for ownership-based security rules without needing to fetch the `Product` document. Should any attribute from `Products` be necessary for Labels authorization, those must be denormalized onto the `Label` documents.\n\n**QAPs Support:** The structure supports Query-based Access Patterns (QAPs) effectively:\n\n*   Listing Products: Can be done directly on the `/products` collection.\n*   Listing Labels for a Product: Can be done with a simple query on the `/labels` collection, filtering by `productId`.\n\nSince no user-specific data or collaborative access is described in the request, the data structure is relatively straightforward. However, if user-specific preferences, settings, or draft content were introduced, these would be stored under `/users/{userId}/...` to maintain clear ownership."
+    "reasoning": "The Firestore structure is designed to persist data for the LabelSync application. The structure prioritizes authorization independence and simplicity for security rules. \n\n1.  **Products and Labels:** Products and Labels are stored in top-level collections. Labels reference their parent Product via the `productId` field. While this creates a potential `get()` in security rules, the application design doesn't explicitly require security rules on Labels other than ownership, so this is acceptable. If more complex security rules are needed, `productId` and other relevant Product data can be denormalized into the Label documents.\n2.  **Command Logs:** CommandLogs are stored in a top-level collection. These are append-only logs, so security focuses on restricting write access.\n3.  **Themes:** Themes are stored in a top-level collection. These are globally accessible and managed by admins (role not defined, but would require an admin role collection).\n4. **Product Label Designs:** A new collection `product_label_designs` is introduced to store the specific design choice for a given product-label pair. This avoids bloating the `products` or `labels` documents with design-specific data and allows for a flexible design system where new designs can be added without migrating existing data.\n\n**Authorization Independence:** This design minimizes the need for `get()` calls in security rules. The `labels` subcollection could potentially require a `get()` call to verify the existence or attributes of the parent product. However, the explicit `productId` field within each `Label` document allows for ownership-based security rules without needing to fetch the `Product` document. Should any attribute from `Products` be necessary for Labels authorization, those must be denormalized onto the `Label` documents.\n\n**QAPs Support:** The structure supports Query-based Access Patterns (QAPs) effectively:\n\n*   Listing Products: Can be done directly on the `/products` collection.\n*   Listing Labels for a Product: Can be done with a simple query on the `/labels` collection, filtering by `productId`.\n*   Finding a design for a product: Can be done by querying `product_label_designs` with a `productId` and `labelId`.\n\nSince no user-specific data or collaborative access is described in the request, the data structure is relatively straightforward. However, if user-specific preferences, settings, or draft content were introduced, these would be stored under `/users/{userId}/...` to maintain clear ownership."
   }
 }
