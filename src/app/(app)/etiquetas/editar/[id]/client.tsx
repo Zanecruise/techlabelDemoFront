@@ -1,151 +1,195 @@
 'use client';
-import { useRef, useEffect, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Pencil, Type, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import {
+  useFirestore,
+  useDoc,
+  useCollection,
+  useMemoFirebase,
+  updateDocumentNonBlocking,
+  deleteDocumentNonBlocking,
+  setDocumentNonBlocking,
+} from '@/firebase';
+import { doc, collection, query, where } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, Trash2, Link, Link2Off } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
-type Tool = 'pencil' | 'text' | 'image';
-
-export default function EditarEtiquetaClient() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [tool, setTool] = useState<Tool>('pencil');
-  const [color, setColor] = useState('#000000');
+export default function EditarEtiquetaClient({ labelId }: { labelId: string }) {
   const router = useRouter();
+  const firestore = useFirestore();
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        // Set a white background
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
-    }
-  }, []);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
-  const startDrawing = ({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) => {
-    const { offsetX, offsetY } = nativeEvent;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  // Fetch the label being edited
+  const labelRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'labels', labelId);
+  }, [firestore, labelId]);
+  const { data: labelData, isLoading: isLoadingLabel } = useDoc(labelRef);
 
-    if (tool === 'pencil') {
-      ctx.beginPath();
-      ctx.moveTo(offsetX, offsetY);
-      setIsDrawing(true);
-    }
-  };
-
-  const draw = ({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || tool !== 'pencil') return;
-    const { offsetX, offsetY } = nativeEvent;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.lineTo(offsetX, offsetY);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  };
-
-  const stopDrawing = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    if (tool === 'pencil') {
-      ctx.closePath();
-      setIsDrawing(false);
-    }
-  };
+  // Fetch all products to populate the dropdown
+  const productsCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'products');
+  }, [firestore]);
+  const { data: products, isLoading: isLoadingProducts } = useCollection(productsCollection);
   
-  const handleAddText = () => {
-    const text = prompt('Digite o texto:');
-    if (text && canvasRef.current) {
-        const ctx = canvasRef.current.getContext('2d');
-        if (ctx) {
-            ctx.fillStyle = color;
-            ctx.font = '20px Arial';
-            ctx.fillText(text, 50, 50); // Example position
-        }
+  // Fetch the currently linked product's details
+  const linkedProductRef = useMemoFirebase(() => {
+    if (!firestore || !labelData?.productId) return null;
+    return doc(firestore, 'products', labelData.productId);
+  }, [firestore, labelData?.productId]);
+  const { data: linkedProductData } = useDoc(linkedProductRef);
+  
+  // Set initial selection when label data loads
+  useEffect(() => {
+    if (labelData) {
+      setSelectedProductId(labelData.productId);
     }
+  }, [labelData]);
+
+  const handleSave = async () => {
+    if (!firestore || !labelRef) return;
+    
+    const originalProductId = labelData?.productId;
+
+    // If the product link has changed
+    if (originalProductId !== selectedProductId) {
+        // Unlink the old product
+        if(originalProductId) {
+            const oldProductRef = doc(firestore, 'products', originalProductId);
+            await updateDocumentNonBlocking(oldProductRef, { labelId: null });
+        }
+        
+        // Link the new product
+        if(selectedProductId) {
+            const newProductRef = doc(firestore, 'products', selectedProductId);
+            await updateDocumentNonBlocking(newProductRef, { labelId: labelId });
+        }
+        
+        // Update the label itself
+        await updateDocumentNonBlocking(labelRef, { productId: selectedProductId });
+        
+        // Log the change
+        logAction(`Vínculo da etiqueta alterado. Antigo produto: ${originalProductId || 'Nenhum'}. Novo produto: ${selectedProductId || 'Nenhum'}`);
+    }
+
+    router.push('/etiquetas');
+  };
+
+  const handleUnlink = async () => {
+      if (!firestore || !labelData?.productId) return;
+      
+      const productRef = doc(firestore, 'products', labelData.productId);
+      const labelRef = doc(firestore, 'labels', labelId);
+
+      // Update both documents
+      await updateDocumentNonBlocking(productRef, { labelId: null });
+      await updateDocumentNonBlocking(labelRef, { productId: null });
+      
+      logAction(`Produto ${labelData.productId} desvinculado da etiqueta.`);
+      setSelectedProductId(null); // Update UI state
+      router.refresh();
+  };
+
+  const handleDelete = async () => {
+    if (!firestore || !labelRef) return;
+    
+    // If a product is linked, unlink it first
+    if(labelData?.productId){
+        const productRef = doc(firestore, 'products', labelData.productId);
+        await updateDocumentNonBlocking(productRef, { labelId: null });
+    }
+    
+    await deleteDocumentNonBlocking(labelRef);
+    logAction(`Etiqueta ${labelId} foi excluída.`);
+    router.push('/etiquetas');
+  };
+
+  const logAction = async (details: string) => {
+    if (!firestore) return;
+    const logRef = doc(collection(firestore, 'command_logs'));
+    await setDocumentNonBlocking(logRef, {
+        command: `Gerenciamento de etiqueta: ${labelData?.macAddress}`,
+        details,
+        timestamp: new Date().toISOString(),
+        label: labelId,
+    }, { merge: true });
   }
 
+  const isLoading = isLoadingLabel || isLoadingProducts;
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin h-10 w-10 text-primary" /></div>;
+  }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <div className="md:col-span-2">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex justify-center items-center bg-gray-200 rounded-md">
-              <canvas
-                ref={canvasRef}
-                width={400}
-                height={300}
-                className="cursor-crosshair rounded-md shadow-lg"
-                onMouseDown={startDrawing}
-                onMouseMove={draw}
-                onMouseUp={stopDrawing}
-                onMouseLeave={stopDrawing}
-              />
+    <div className="flex justify-center">
+      <Card className="w-full max-w-2xl">
+        <CardHeader>
+          <CardTitle>Etiqueta: {labelData?.macAddress}</CardTitle>
+          <CardDescription>
+            {linkedProductData ? `Atualmente vinculada ao produto: ${linkedProductData.name} (SKU: ${linkedProductData.sku})` : 'Esta etiqueta não está vinculada a nenhum produto.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+            <div className="space-y-2">
+                <Label htmlFor="product-select">Associar a um Produto</Label>
+                <Select onValueChange={(value) => setSelectedProductId(value === 'none' ? null : value)} value={selectedProductId || 'none'}>
+                    <SelectTrigger id="product-select">
+                        <SelectValue placeholder="Selecione um produto..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="none">Nenhum (Desvincular)</SelectItem>
+                        {products?.map((product: any) => (
+                            <SelectItem key={product.id} value={product.id} disabled={!!product.labelId && product.labelId !== labelId}>
+                                {product.name} {product.labelId && product.labelId !== labelId && '(Já vinculado)'}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                 <p className="text-sm text-muted-foreground">Selecione um produto para vincular a esta etiqueta. Produtos que já possuem uma etiqueta não podem ser selecionados.</p>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="space-y-6">
-        <Card>
-          <CardContent className="p-4 space-y-4">
-            <h3 className="font-semibold">Ferramentas</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant={tool === 'pencil' ? 'secondary' : 'outline'} onClick={() => setTool('pencil')}>
-                <Pencil className="mr-2" /> Desenhar
-              </Button>
-              <Button variant={tool === 'text' ? 'secondary' : 'outline'} onClick={handleAddText}>
-                <Type className="mr-2" /> Texto
-              </Button>
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+                 <Button onClick={handleUnlink} variant="outline" className="w-full" disabled={!labelData?.productId}>
+                    <Link2Off className="mr-2"/>
+                    Desvincular Produto Atual
+                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="w-full">
+                            <Trash2 className="mr-2" />
+                            Excluir Etiqueta
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta ação não pode ser desfeita. Isto irá excluir permanentemente a etiqueta e removerá qualquer vínculo com produtos.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete}>Sim, excluir</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
-             <div className="space-y-2">
-                <Label htmlFor="color-picker">Cor</Label>
-                <Input id="color-picker" type="color" value={color} onChange={(e) => setColor(e.target.value)} className="p-1 h-10"/>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-            <CardContent className="p-4 space-y-4">
-                <h3 className="font-semibold">Templates</h3>
-                 <div className="grid grid-cols-2 gap-2">
-                    <Image src="https://picsum.photos/seed/template1/150/100" alt="Template 1" width={150} height={100} className="rounded-md object-cover" />
-                    <Image src="https://picsum.photos/seed/template2/150/100" alt="Template 2" width={150} height={100} className="rounded-md object-cover" />
-                 </div>
-                 <h3 className="font-semibold">Templates Promocionais</h3>
-                 <div className="grid grid-cols-2 gap-2">
-                    <Image src="https://picsum.photos/seed/promo1/150/100" alt="Template Promocional 1" width={150} height={100} className="rounded-md object-cover" />
-                    <Image src="https://picsum.photos/seed/promo2/150/100" alt="Template Promocional 2" width={150} height={100} className="rounded-md object-cover" />
-                 </div>
-            </CardContent>
-        </Card>
-
-        <div className="flex gap-2">
-          <Button variant="outline" className="w-full" onClick={() => router.back()}>
-            Cancelar
-          </Button>
-          <Button className="w-full">
-            Salvar
-          </Button>
+        </CardContent>
+        <div className="p-6 pt-0 flex justify-end gap-4">
+            <Button variant="outline" onClick={() => router.back()}>Cancelar</Button>
+            <Button onClick={handleSave}>
+                <Link className="mr-2"/>
+                Salvar Vínculo
+            </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
