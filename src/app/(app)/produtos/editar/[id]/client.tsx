@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useFirestore, useDoc, updateDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc, updateDocumentNonBlocking, useCollection, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -57,7 +57,7 @@ export default function EditarProdutoClient({ productId }: { productId: string }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !price || !sku || !productRef) {
+    if (!name || !price || !sku || !productRef || !firestore) {
       alert('Por favor, preencha os campos obrigatórios.');
       return;
     }
@@ -88,6 +88,18 @@ export default function EditarProdutoClient({ productId }: { productId: string }
         await updateDocumentNonBlocking(newLabelRef, { productId });
       }
     }
+    
+    // Log the edit
+    const commandLogsCollection = collection(firestore, 'command_logs');
+    const logRef = doc(commandLogsCollection);
+    await setDocumentNonBlocking(logRef, {
+        command: `Edição do produto: ${name}`,
+        details: `Produto ${name} (SKU: ${sku}) foi atualizado.`,
+        timestamp: new Date().toISOString(),
+        product: productId,
+        label: selectedLabelId,
+    }, { merge: true });
+
 
     router.push('/produtos');
   };

@@ -33,14 +33,16 @@ export default function AdicionarProdutoClient() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !price || !sku) {
+    if (!name || !price || !sku || !firestore) {
       alert('Por favor, preencha os campos Nome, Preço e SKU.');
       return;
     }
     
     // 1. Add the product
     const productsCollection = collection(firestore, 'products');
-    const newProductRef = await addDocumentNonBlocking(productsCollection, {
+    const newProductRef = doc(productsCollection); // Create a reference with a new ID first
+    
+    await setDocumentNonBlocking(newProductRef, {
       name,
       description: '', 
       price: parseFloat(price),
@@ -51,17 +53,24 @@ export default function AdicionarProdutoClient() {
       date,
       gtin,
       labelId: selectedLabelId,
-    });
+    }, { merge: true });
 
-    if (newProductRef && selectedLabelId) {
+    if (selectedLabelId) {
         // 2. If a label was selected, update the label to link it to the new product
         const labelRef = doc(firestore, 'labels', selectedLabelId);
         updateDocumentNonBlocking(labelRef, { productId: newProductRef.id });
-
-        // 3. Update the product with the labelId
-        const productRef = doc(firestore, 'products', newProductRef.id);
-        updateDocumentNonBlocking(productRef, { labelId: selectedLabelId });
     }
+
+     // Log the creation
+    const commandLogsCollection = collection(firestore, 'command_logs');
+    const logRef = doc(commandLogsCollection);
+    await setDocumentNonBlocking(logRef, {
+        command: `Novo produto criado: ${name}`,
+        details: `Produto ${name} (SKU: ${sku}) foi adicionado.`,
+        timestamp: new Date().toISOString(),
+        product: newProductRef.id,
+        label: selectedLabelId
+    }, { merge: true });
     
     router.push('/produtos');
   };

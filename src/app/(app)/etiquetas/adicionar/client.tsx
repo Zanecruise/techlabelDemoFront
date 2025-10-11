@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useFirestore, addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { useFirestore, setDocumentNonBlocking } from '@/firebase';
+import { collection, doc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -16,18 +16,29 @@ export default function AdicionarEtiquetaClient() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!macAddress) {
+    if (!macAddress || !firestore) {
       alert('Por favor, preencha o endereço MAC.');
       return;
     }
 
     const labelsCollection = collection(firestore, 'labels');
     // We can use the MAC address as the document ID if it's unique
-    const labelRef = doc(labelsCollection, macAddress.replace(/:/g, ''));
+    const labelId = macAddress.replace(/:/g, '');
+    const labelRef = doc(labelsCollection, labelId);
     
     await setDocumentNonBlocking(labelRef, {
       macAddress,
       productId: null,
+    }, { merge: true });
+
+    // Log the creation
+    const commandLogsCollection = collection(firestore, 'command_logs');
+    const logRef = doc(commandLogsCollection);
+    await setDocumentNonBlocking(logRef, {
+        command: `Nova etiqueta criada: ${macAddress}`,
+        details: `Etiqueta com MAC Address ${macAddress} foi adicionada.`,
+        timestamp: new Date().toISOString(),
+        label: labelId,
     }, { merge: true });
 
 
