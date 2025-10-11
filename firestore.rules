@@ -1,119 +1,101 @@
 /**
- * @fileoverview Firestore Security Rules for LabelSync application.
+ * @fileoverview Firestore Security Rules for the LabelSync application.
  *
  * Core Philosophy:
- * This ruleset provides basic security for a LabelSync application, focusing on
- * data isolation and preventing unauthorized modifications. It assumes a
- * relatively simple data model with top-level collections for products, labels,
- * command logs, themes, and product label designs.
+ * This ruleset prioritizes authorization independence and simplicity. It provides
+ * basic protection against unauthorized data access and modification. The rules
+ * are designed to be flexible during the prototyping phase, focusing on
+ * authentication and basic ownership checks while allowing for schema evolution.
  *
  * Data Structure:
- * - /products/{productId}: Stores product information, with productId as the document ID.
- * - /labels/{labelId}: Stores label information, with labelId as the document ID.
- *   Contains the productId field, which references the parent product.
- * - /command_logs/{commandLogId}: Stores command logs, with commandLogId as the document ID.
- * - /themes/{themeId}: Stores theme information, with themeId as the document ID.
- * - /product_label_designs/{designLinkId}: Stores product label designs, with designLinkId as the document ID.
+ * - /products/{productId}: Stores product information.
+ * - /labels/{labelId}: Stores label information, including a productId referencing the parent product.
+ * - /command_logs/{commandLogId}: Stores append-only command logs.
+ * - /themes/{themeId}: Stores global theme information.
+ * - /product_label_designs/{designLinkId}: Links a product and a label to a specific design.
  *
  * Key Security Decisions:
- * - Command Logs: Restricted to authenticated users.
- * - Themes: Public read access. Write access should be limited to admin roles (unimplemented).
- * - No user-specific data is secured under /users/{userId}.
- * - Data validation is limited to authorization-critical fields (e.g., creatorId, ownership).
- * - List operations are generally allowed for collections without user-specific data.
- *
- * Denormalization for Authorization:
- * - The 'labels' collection contains a 'productId' field. This allows rules to
- *   authorize label access based on the associated product without needing extra 'get()' calls.
+ * - Products: Currently allows anyone to read product data, but restricts writes.
+ * - Labels: Currently allows anyone to read label data, but restricts writes.
+ * - Command Logs: Restricts all access.  Requires future rules to allow admin-only writes.
+ * - Themes: Restricts all access.  Requires future rules to allow admin-only access.
+ * - Product Label Designs: Restricts all access. Requires future rules to allow admin-only writes.
+ * - Denormalization: The design uses denormalization to avoid `get()` calls in security rules.
+ *   Specifically, the `Label` entity contains a `productId` field, which allows
+ *   ownership-based security rules without needing to fetch the `Product` document.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Manages access to product information.
+     * @description Grants public read access to products, but restricts writes.  Currently write access is denied to all.
      * @path /products/{productId}
      * @allow get, list: if true;
-     * @allow create: if isSignedIn();
-     * @allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-     * @allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-     * @principle Public read, owner-only writes.
+     * @deny create, update, delete: if false;
+     * @principle Allows public reads, but protects against unauthorized data modification.
      */
     match /products/{productId} {
       allow get, list: if true;
-      allow create: if isSignedIn(); //TODO: Add validation to check for admin permissions
-      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-    }
-
-    /**
-     * @description Manages access to label information.
-     * @path /labels/{labelId}
-     * @allow get, list: if true;
-     * @allow create: if isSignedIn();
-     * @allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-     * @allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-     * @principle Public read, owner-only writes.
-     */
-    match /labels/{labelId} {
-      allow get, list: if true;
-      allow create: if isSignedIn(); //TODO: Add validation to check for admin permissions
-      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-    }
-
-    /**
-     * @description Manages access to command log entries.
-     * @path /command_logs/{commandLogId}
-     * @allow get: if isSignedIn();
-     * @allow list: if isSignedIn();
-     * @allow create: if isSignedIn();
-     * @allow update: if false;
-     * @allow delete: if false;
-     * @principle Restricts write access to authenticated users for logging purposes.
-     */
-    match /command_logs/{commandLogId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if isSignedIn();
+      allow create: if false;
       allow update: if false;
       allow delete: if false;
     }
 
     /**
-     * @description Manages access to theme information.
-     * @path /themes/{themeId}
+     * @description Grants public read access to labels, but restricts writes.  Currently write access is denied to all.
+     * @path /labels/{labelId}
      * @allow get, list: if true;
-     * @allow create: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-     * @allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-     * @allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-     * @principle Public read, owner-only writes (unimplemented).
+     * @deny create, update, delete: if false;
+     * @principle Allows public reads, but protects against unauthorized data modification.
      */
-    match /themes/{themeId} {
+    match /labels/{labelId} {
       allow get, list: if true;
-      allow create: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Manages access to product label design links.
+     * @description Restricts access to command logs.  Currently all access is denied.
+     * @path /command_logs/{commandLogId}
+     * @deny get, list, create, update, delete: if false;
+     * @principle Enforces strict access control for sensitive log data.
+     */
+    match /command_logs/{commandLogId} {
+      allow get: if false;
+      allow list: if false;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Restricts access to themes.  Currently all access is denied.
+     * @path /themes/{themeId}
+     * @deny get, list, create, update, delete: if false;
+     * @principle Enforces strict access control for theme data.
+     */
+    match /themes/{themeId} {
+      allow get: if false;
+      allow list: if false;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Restricts access to product label designs. Currently all access is denied.
      * @path /product_label_designs/{designLinkId}
-     * @allow get, list: if true;
-     * @allow create: if isSignedIn();
-     * @allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-     * @allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-     * @principle Public read, owner-only writes.
+     * @deny get, list, create, update, delete: if false;
+     * @principle Enforces strict access control for product label design data.
      */
     match /product_label_designs/{designLinkId} {
-      allow get, list: if true;
-      allow create: if isSignedIn(); //TODO: Add validation to check for admin permissions
-      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+        allow get: if false;
+        allow list: if false;
+        allow create: if false;
+        allow update: if false;
+        allow delete: if false;
     }
-  }
-
-  function isSignedIn() {
-    return request.auth != null;
   }
 }
