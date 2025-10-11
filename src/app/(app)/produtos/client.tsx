@@ -109,8 +109,10 @@ export default function ProdutosClient() {
                   <TableCell>R$ {product.price}</TableCell>
                   <TableCell>{product.labelId ? getLabelMacAddress(product.labelId) : <span className="text-muted-foreground">N/A</span>}</TableCell>
                   <TableCell className="text-center">
-                    <Button variant="ghost" size="icon">
-                      <Pencil className="h-4 w-4" />
+                    <Button asChild variant="ghost" size="icon">
+                      <Link href={`/produtos/editar/${product.id}`}>
+                        <Pencil className="h-4 w-4" />
+                      </Link>
                     </Button>
                   </TableCell>
                   <TableCell className="text-center">
