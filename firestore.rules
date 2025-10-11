@@ -1,101 +1,82 @@
 /**
- * @fileoverview Firestore Security Rules for the LabelSync application.
- *
- * Core Philosophy:
- * This ruleset prioritizes authorization independence and simplicity. It provides
- * basic protection against unauthorized data access and modification. The rules
- * are designed to be flexible during the prototyping phase, focusing on
- * authentication and basic ownership checks while allowing for schema evolution.
- *
+ * @file Overview
+ * This ruleset enforces a basic data access model with an emphasis on ownership and admin-controlled data.
  * Data Structure:
- * - /products/{productId}: Stores product information.
- * - /labels/{labelId}: Stores label information, including a productId referencing the parent product.
- * - /command_logs/{commandLogId}: Stores append-only command logs.
- * - /themes/{themeId}: Stores global theme information.
- * - /product_label_designs/{designLinkId}: Links a product and a label to a specific design.
+ * - /products/{productId}: Stores product information, accessible to all for reading, but write access is restricted.
+ * - /labels/{labelId}: Stores label information, accessible to all for reading, but write access is restricted.
+ * - /command_logs/{commandLogId}: Stores command logs, with restricted write access.
+ * - /themes/{themeId}: Stores themes, accessible to all for reading, but write access is restricted to admins.
+ * - /product_label_designs/{designLinkId}: Stores the selected design for a product's label.
  *
  * Key Security Decisions:
- * - Products: Currently allows anyone to read product data, but restricts writes.
- * - Labels: Currently allows anyone to read label data, but restricts writes.
- * - Command Logs: Restricts all access.  Requires future rules to allow admin-only writes.
- * - Themes: Restricts all access.  Requires future rules to allow admin-only access.
- * - Product Label Designs: Restricts all access. Requires future rules to allow admin-only writes.
- * - Denormalization: The design uses denormalization to avoid `get()` calls in security rules.
- *   Specifically, the `Label` entity contains a `productId` field, which allows
- *   ownership-based security rules without needing to fetch the `Product` document.
+ * - Public read access is allowed on /products, /labels, and /themes.
+ * - Write access to /products, /labels, /command_logs, and /product_label_designs is restricted.  An admin role is required (unimplemented).
+ * - No user listing is permitted.
+ *
+ * Denormalization for Authorization:
+ * - The ruleset avoids `get()` calls by relying on the `productId` field within `Label` documents.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Grants public read access to products, but restricts writes.  Currently write access is denied to all.
+     * @description Allows anyone to read product information, but restricts writes.
      * @path /products/{productId}
-     * @allow get, list: if true;
-     * @deny create, update, delete: if false;
-     * @principle Allows public reads, but protects against unauthorized data modification.
+     * @allow (get, list)
+     * @deny (create, update, delete)
+     * @principle Allows public read access but restricts writes to prevent unauthorized modifications.
      */
     match /products/{productId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if false; // TODO: Implement admin role check
     }
 
     /**
-     * @description Grants public read access to labels, but restricts writes.  Currently write access is denied to all.
+     * @description Allows anyone to read label information, but restricts writes.
      * @path /labels/{labelId}
-     * @allow get, list: if true;
-     * @deny create, update, delete: if false;
-     * @principle Allows public reads, but protects against unauthorized data modification.
+     * @allow (get, list)
+     * @deny (create, update, delete)
+     * @principle Allows public read access but restricts writes to prevent unauthorized modifications.
      */
     match /labels/{labelId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if false; // TODO: Implement admin role check
     }
 
     /**
-     * @description Restricts access to command logs.  Currently all access is denied.
+     * @description Restricts all access to command logs.
      * @path /command_logs/{commandLogId}
-     * @deny get, list, create, update, delete: if false;
-     * @principle Enforces strict access control for sensitive log data.
+     * @allow None
+     * @deny (create, get, list, update, delete)
+     * @principle Restricts access to command logs.
      */
     match /command_logs/{commandLogId} {
-      allow get: if false;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list, create, update, delete: if false;
     }
 
     /**
-     * @description Restricts access to themes.  Currently all access is denied.
+     * @description Allows anyone to read theme information, but restricts writes to admins.
      * @path /themes/{themeId}
-     * @deny get, list, create, update, delete: if false;
-     * @principle Enforces strict access control for theme data.
+     * @allow (get, list)
+     * @deny (create, update, delete)
+     * @principle Allows public read access but restricts writes to prevent unauthorized modifications.
      */
     match /themes/{themeId} {
-      allow get: if false;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Implement admin role check
     }
 
     /**
-     * @description Restricts access to product label designs. Currently all access is denied.
+     * @description Allows anyone to read a product label design, but restricts writes.
      * @path /product_label_designs/{designLinkId}
-     * @deny get, list, create, update, delete: if false;
-     * @principle Enforces strict access control for product label design data.
+     * @allow (get, list)
+     * @deny (create, update, delete)
+     * @principle Allows public read access but restricts writes to prevent unauthorized modifications.
      */
     match /product_label_designs/{designLinkId} {
-        allow get: if false;
-        allow list: if false;
-        allow create: if false;
-        allow update: if false;
-        allow delete: if false;
+        allow get, list: if true;
+        allow create, update, delete: if false; // TODO: Implement admin role check
     }
   }
 }
