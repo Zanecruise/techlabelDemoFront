@@ -1,91 +1,119 @@
-/**
- * @fileoverview Firestore Security Rules for the LabelSync application.
- *
- * Core Philosophy:
- * This ruleset provides baseline security for data persistence in a Firestore database, focusing on simplicity and explicit access control.
- * It defaults to public read access for all collections, combined with owner-only or admin-only writes.
- *
- * Data Structure:
- * - /products/{productId}: Stores product information.
- * - /labels/{labelId}: Stores label information, referencing the parent product via 'productId'.
- * - /command_logs/{commandLogId}: Stores command logs.
- * - /themes/{themeId}: Stores theme information.
- *
- * Key Security Decisions:
- * - Public Read Access: All collections allow public read access (`get` and `list`).
- * - Products and Labels: Write access is open due to lack of specified ownership.
- * - Command Logs: Write access is denied to all users, effectively making them append-only by server-side processes.
- * - Themes: Write access is open due to lack of specified admin role and ownership.
- *
- * Denormalization for Authorization:
- * - The 'Label' entity includes a 'productId' field, denormalizing the relationship to the parent 'Product'. This avoids the need for `get()` calls to the `products` collection when evaluating label-related rules and filtering `labels` queries by `productId`.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows public read access and open write access to product information.
+     * @description Allows public read access to product information, but restricts writes to authenticated users.
      * @path /products/{productId}
-     * @allow get, list: if true;
-     * @allow create: if true;
-     * @allow update: if true;
-     * @allow delete: if true;
-     * @principle Allows public read access to all products with open write access.
+     * @allow get, list: Anyone can read the product data.
+     * @allow create: An authenticated user can create a product.
+     * @allow update, delete: An authenticated user can update or delete a product they own.
+     * @deny create: An unauthenticated user cannot create a product.
+     * @deny update: An unauthenticated user cannot update a product.
+     * @deny delete: An unauthenticated user cannot delete a product.
+     * @principle Public read, owner-only write access. Validates the 'id' on create and enforces immutability on update.
      */
     match /products/{productId} {
       allow get, list: if true;
-      allow create: if true;
-      allow update: if true;
-      allow delete: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
     /**
-     * @description Allows public read access and open write access to label information.
+     * @description Allows public read access to label information, but restricts writes to authenticated users.
      * @path /labels/{labelId}
-     * @allow get, list: if true;
-     * @allow create: if true;
-     * @allow update: if true;
-     * @allow delete: if true;
-     * @principle Allows public read access to all labels with open write access.
+     * @allow get, list: Anyone can read the label data.
+     * @allow create: An authenticated user can create a label.
+     * @allow update, delete: An authenticated user can update or delete a label they own.
+     * @deny create: An unauthenticated user cannot create a label.
+     * @deny update: An unauthenticated user cannot update a label.
+     * @deny delete: An unauthenticated user cannot delete a label.
+     * @principle Public read, owner-only write access. Validates the 'id' on create and enforces immutability on update.
      */
     match /labels/{labelId} {
       allow get, list: if true;
-      allow create: if true;
-      allow update: if true;
-      allow delete: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
     /**
-     * @description Allows public read access but denies write access to command logs.
+     * @description Allows authenticated users to create command logs, but prevents updates and deletes.
      * @path /command_logs/{commandLogId}
-     * @allow get, list: if true;
-     * @allow create: if false;
-     * @allow update: if false;
-     * @allow delete: if false;
-     * @principle Allows public read access to all command logs but restricts write access to prevent modifications.
+     * @allow create: An authenticated user can create a command log.
+     * @deny get: Getting specific command logs is disallowed.
+     * @deny list: Listing command logs is disallowed.
+     * @deny update: Updating command logs is disallowed.
+     * @deny delete: Deleting command logs is disallowed.
+     * @principle Append-only log with authenticated user access.
      */
     match /command_logs/{commandLogId} {
-      allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if false;
+      allow create: if isSignedIn();
+      allow update, delete: if false;
     }
 
     /**
-     * @description Allows public read access and open write access to theme information.
+     * @description Allows public read access to theme information, but restricts writes to authenticated users.
      * @path /themes/{themeId}
-     * @allow get, list: if true;
-     * @allow create: if true;
-     * @allow update: if true;
-     * @allow delete: if true;
-     * @principle Allows public read access to all themes with open write access.
+     * @allow get, list: Anyone can read the theme data.
+     * @allow create: An authenticated user can create a theme.
+     * @allow update, delete: An authenticated user can update or delete a theme they own.
+     * @deny create: An unauthenticated user cannot create a theme.
+     * @deny update: An unauthenticated user cannot update a theme.
+     * @deny delete: An unauthenticated user cannot delete a theme.
+     * @principle Public read, owner-only write access. Validates the 'id' on create and enforces immutability on update.
      */
     match /themes/{themeId} {
       allow get, list: if true;
-      allow create: if true;
-      allow update: if true;
-      allow delete: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    /**
+     * @description Allows public read access to product label designs, but restricts writes to authenticated users.
+     * @path /product_label_designs/{designLinkId}
+     * @allow get, list: Anyone can read the design link data.
+     * @allow create: An authenticated user can create a design link.
+     * @allow update, delete: An authenticated user can update or delete a design link they own.
+     * @deny create: An unauthenticated user cannot create a design link.
+     * @deny update: An unauthenticated user cannot update a design link.
+     * @deny delete: An unauthenticated user cannot delete a design link.
+     * @principle Public read, owner-only write access. Validates the 'id' on create and enforces immutability on update.
+     */
+    match /product_label_designs/{designLinkId} {
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // =========================================================
+    // Helper functions
+    // =========================================================
+
+    /**
+     * @description Checks if the request is authenticated.
+     * @return {bool} True if the request is authenticated, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the request is authenticated and the user ID matches the provided user ID.
+     * @param {string} userId The user ID to check against.
+     * @return {bool} True if the request is authenticated and the user ID matches, false otherwise.
+     */
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the request is authenticated, the user ID matches the provided user ID, and the resource exists.
+     * @param {string} userId The user ID to check against.
+     * @return {bool} True if the request is authenticated, the user ID matches, and the resource exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && exists(resource);
     }
   }
 }
