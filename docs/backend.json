@@ -164,6 +164,21 @@
         "designData": { "type": "object" }
       },
       "required": ["productId", "labelId", "designId"]
+    },
+     "LabelSync": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LabelSync",
+      "type": "object",
+      "description": "Denormalized data structure for syncing with an ESP32 device.",
+      "properties": {
+        "macAddress": { "type": "string" },
+        "productId": { "type": ["string", "null"] },
+        "labelId": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "template": { "type": "string" },
+        "templateModel": { "type": "object" }
+      },
+      "required": ["macAddress", "labelId", "updatedAt", "template", "templateModel"]
     }
   },
   "auth": {
@@ -218,8 +233,17 @@
           "description": "Links a product and a label to a specific design. `designLinkId` is the document ID.",
           "params": [{ "name": "designLinkId", "description": "The unique identifier for the design link." }]
         }
+      },
+       {
+        "path": "/label_sync/{macAddress}",
+        "definition": {
+          "entityName": "LabelSync",
+          "schema": { "$ref": "#/backend/entities/LabelSync" },
+          "description": "Denormalized data for ESP32 sync. The document ID is the MAC address.",
+          "params": [{ "name": "macAddress", "description": "The MAC address of the label." }]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to persist data for the LabelSync application. The structure prioritizes authorization independence and simplicity for security rules. \n\n1.  **Products and Labels:** Products and Labels are stored in top-level collections. Labels reference their parent Product via the `productId` field. While this creates a potential `get()` in security rules, the application design doesn't explicitly require security rules on Labels other than ownership, so this is acceptable. If more complex security rules are needed, `productId` and other relevant Product data can be denormalized into the Label documents.\n2.  **Command Logs:** CommandLogs are stored in a top-level collection. These are append-only logs, so security focuses on restricting write access.\n3.  **Themes:** Themes are stored in a top-level collection. These are globally accessible and managed by admins (role not defined, but would require an admin role collection).\n4. **Product Label Designs:** A new collection `product_label_designs` is introduced to store the specific design choice for a given product-label pair. This avoids bloating the `products` or `labels` documents with design-specific data and allows for a flexible design system where new designs can be added without migrating existing data.\n\n**Authorization Independence:** This design minimizes the need for `get()` calls in security rules. The `labels` subcollection could potentially require a `get()` call to verify the existence or attributes of the parent product. However, the explicit `productId` field within each `Label` document allows for ownership-based security rules without needing to fetch the `Product` document. Should any attribute from `Products` be necessary for Labels authorization, those must be denormalized onto the `Label` documents.\n\n**QAPs Support:** The structure supports Query-based Access Patterns (QAPs) effectively:\n\n*   Listing Products: Can be done directly on the `/products` collection.\n*   Listing Labels for a Product: Can be done with a simple query on the `/labels` collection, filtering by `productId`.\n*   Finding a design for a product: Can be done by querying `product_label_designs` with a `productId` and `labelId`.\n\nSince no user-specific data or collaborative access is described in the request, the data structure is relatively straightforward. However, if user-specific preferences, settings, or draft content were introduced, these would be stored under `/users/{userId}/...` to maintain clear ownership."
+    "reasoning": "The Firestore structure is designed to persist data for the LabelSync application. The structure prioritizes authorization independence and simplicity for security rules. \n\n1.  **Products and Labels:** Products and Labels are stored in top-level collections. Labels reference their parent Product via the `productId` field. While this creates a potential `get()` in security rules, the application design doesn't explicitly require security rules on Labels other than ownership, so this is acceptable. If more complex security rules are needed, `productId` and other relevant Product data can be denormalized into the Label documents.\n2.  **Command Logs:** CommandLogs are stored in a top-level collection. These are append-only logs, so security focuses on restricting write access.\n3.  **Themes:** Themes are stored in a top-level collection. These are globally accessible and managed by admins (role not defined, but would require an admin role collection).\n4. **Product Label Designs:** A new collection `product_label_designs` is introduced to store the specific design choice for a given product-label pair. This avoids bloating the `products` or `labels` documents with design-specific data and allows for a flexible design system where new designs can be added without migrating existing data.\n5. **Label Sync:** The `label_sync` collection stores denormalized data ready for consumption by an external API for ESP32 devices. This avoids complex joins and data manipulation on the backend, providing a simple, efficient data structure for hardware communication.\n\n**Authorization Independence:** This design minimizes the need for `get()` calls in security rules. The `labels` subcollection could potentially require a `get()` call to verify the existence or attributes of the parent product. However, the explicit `productId` field within each `Label` document allows for ownership-based security rules without needing to fetch the `Product` document. Should any attribute from `Products` be necessary for Labels authorization, those must be denormalized onto the `Label` documents.\n\n**QAPs Support:** The structure supports Query-based Access Patterns (QAPs) effectively:\n\n*   Listing Products: Can be done directly on the `/products` collection.\n*   Listing Labels for a Product: Can be done with a simple query on the `/labels` collection, filtering by `productId`.\n*   Finding a design for a product: Can be done by querying `product_label_designs` with a `productId` and `labelId`.\n\nSince no user-specific data or collaborative access is described in the request, the data structure is relatively straightforward. However, if user-specific preferences, settings, or draft content were introduced, these would be stored under `/users/{userId}/...` to maintain clear ownership."
   }
 }

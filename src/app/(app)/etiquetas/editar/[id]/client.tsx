@@ -9,7 +9,7 @@ import {
   deleteDocumentNonBlocking,
   setDocumentNonBlocking,
 } from '@/firebase';
-import { doc, collection, query, where } from 'firebase/firestore';
+import { doc, collection, query, where, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,8 +52,35 @@ export default function EditarEtiquetaClient({ labelId }: { labelId: string }) {
     }
   }, [labelData]);
 
+  const updateSyncCollection = async (labelDoc: any, productDoc: any | null) => {
+    if (!firestore || !labelDoc?.macAddress) return;
+
+    const syncRef = doc(firestore, 'label_sync', labelDoc.macAddress);
+
+    if (!productDoc) {
+      // If no product, delete the sync document
+      await deleteDocumentNonBlocking(syncRef);
+      return;
+    }
+    
+    const designDocRef = doc(firestore, 'product_label_designs', `${productDoc.id}_${labelDoc.id}`);
+    const designSnap = await getDoc(designDocRef);
+    const designData = designSnap.exists() ? designSnap.data() : { designId: null, designData: {} };
+
+    const syncData = {
+        macAddress: labelDoc.macAddress,
+        productId: productDoc.id,
+        labelId: labelDoc.id,
+        updatedAt: new Date().toISOString(),
+        template: designData?.designId,
+        templateModel: designData?.designData,
+        ...productDoc
+    };
+    await setDocumentNonBlocking(syncRef, syncData, { merge: true });
+  }
+
   const handleSave = async () => {
-    if (!firestore || !labelRef) return;
+    if (!firestore || !labelRef || !labelData) return;
     
     const originalProductId = labelData?.productId;
 
@@ -63,12 +90,20 @@ export default function EditarEtiquetaClient({ labelId }: { labelId: string }) {
         if(originalProductId) {
             const oldProductRef = doc(firestore, 'products', originalProductId);
             await updateDocumentNonBlocking(oldProductRef, { labelId: null });
+            const oldProductSnap = await getDoc(oldProductRef);
+            if(oldProductSnap.exists()){
+                 await updateSyncCollection({ ...labelData, id: labelId }, null); // Signal removal
+            }
         }
         
         // Link the new product
         if(selectedProductId) {
             const newProductRef = doc(firestore, 'products', selectedProductId);
             await updateDocumentNonBlocking(newProductRef, { labelId: labelId });
+            const newProductSnap = await getDoc(newProductRef);
+             if(newProductSnap.exists()){
+                await updateSyncCollection({ ...labelData, id: labelId }, { ...newProductSnap.data(), id: newProductSnap.id });
+            }
         }
         
         // Update the label itself
@@ -82,14 +117,20 @@ export default function EditarEtiquetaClient({ labelId }: { labelId: string }) {
   };
 
   const handleUnlink = async () => {
-      if (!firestore || !labelData?.productId) return;
+      if (!firestore || !labelData?.productId || !labelData) return;
       
       const productRef = doc(firestore, 'products', labelData.productId);
-      const labelRef = doc(firestore, 'labels', labelId);
+      const currentLabelRef = doc(firestore, 'labels', labelId);
 
       // Update both documents
       await updateDocumentNonBlocking(productRef, { labelId: null });
-      await updateDocumentNonBlocking(labelRef, { productId: null });
+      await updateDocumentNonBlocking(currentLabelRef, { productId: null });
+
+      // Remove from sync collection
+      if (labelData.macAddress) {
+          const syncRef = doc(firestore, 'label_sync', labelData.macAddress);
+          await deleteDocumentNonBlocking(syncRef);
+      }
       
       logAction(`Produto ${labelData.productId} desvinculado da etiqueta.`);
       setSelectedProductId(null); // Update UI state
@@ -97,12 +138,18 @@ export default function EditarEtiquetaClient({ labelId }: { labelId: string }) {
   };
 
   const handleDelete = async () => {
-    if (!firestore || !labelRef) return;
+    if (!firestore || !labelRef || !labelData) return;
     
     // If a product is linked, unlink it first
     if(labelData?.productId){
         const productRef = doc(firestore, 'products', labelData.productId);
         await updateDocumentNonBlocking(productRef, { labelId: null });
+    }
+    
+     // Remove from sync collection
+    if (labelData.macAddress) {
+        const syncRef = doc(firestore, 'label_sync', labelData.macAddress);
+        await deleteDocumentNonBlocking(syncRef);
     }
     
     await deleteDocumentNonBlocking(labelRef);

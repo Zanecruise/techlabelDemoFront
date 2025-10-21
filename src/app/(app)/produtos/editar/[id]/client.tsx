@@ -1,7 +1,7 @@
 'use client';
 
-import { useFirestore, useDoc, updateDocumentNonBlocking, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
-import { doc, } from 'firebase/firestore';
+import { useFirestore, useDoc, updateDocumentNonBlocking, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { doc, collection } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -24,6 +24,13 @@ export default function EditarProdutoClient({ productId }: { productId: string }
       return doc(firestore, 'product_label_designs', `${productId}_${productData.labelId}`);
   }, [firestore, productId, productData?.labelId]);
   const { data: designData, isLoading: isLoadingDesign } = useDoc(designQuery);
+  
+  // Fetch label to get macAddress
+  const labelRef = useMemoFirebase(() => {
+    if (!firestore || !productData?.labelId) return null;
+    return doc(firestore, 'labels', productData.labelId);
+  }, [firestore, productData?.labelId]);
+  const { data: labelData } = useDoc(labelRef);
 
 
   const [initialData, setInitialData] = useState<ProductFormData | undefined>();
@@ -75,6 +82,13 @@ export default function EditarProdutoClient({ productId }: { productId: string }
       if (originalLabelId) {
         const oldLabelRef = doc(firestore, 'labels', originalLabelId);
         await updateDocumentNonBlocking(oldLabelRef, { productId: null });
+        
+        // Remove old sync doc
+        const oldLabelDoc = await useDoc(doc(firestore, 'labels', originalLabelId));
+        if(oldLabelDoc.data?.macAddress) {
+            const oldSyncRef = doc(firestore, 'label_sync', oldLabelDoc.data.macAddress);
+            await deleteDocumentNonBlocking(oldSyncRef);
+        }
       }
       // Link the new label if one was selected
       if (data.selectedLabelId) {
@@ -93,10 +107,25 @@ export default function EditarProdutoClient({ productId }: { productId: string }
             designData: data.designData,
         }, { merge: true });
     }
+    
+    // 4. Update the sync collection
+    if (data.selectedLabelId && labelData?.macAddress) {
+        const syncRef = doc(firestore, 'label_sync', labelData.macAddress);
+        const syncData = {
+            macAddress: labelData.macAddress,
+            productId: productId,
+            labelId: data.selectedLabelId,
+            updatedAt: new Date().toISOString(),
+            template: data.selectedDesign,
+            templateModel: data.designData,
+            ...productUpdateData
+        };
+        await setDocumentNonBlocking(syncRef, syncData, { merge: true });
+    }
 
 
-    // 4. Log the edit
-    const commandLogsCollection = doc(firestore, 'command_logs', crypto.randomUUID());
+    // 5. Log the edit
+    const commandLogsCollection = doc(collection(firestore, 'command_logs'), crypto.randomUUID());
     await setDocumentNonBlocking(commandLogsCollection, {
         command: `Edição do produto: ${data.name}`,
         details: `Produto ${data.name} (SKU: ${data.sku}) foi atualizado.`,
