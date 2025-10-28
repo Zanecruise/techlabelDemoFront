@@ -1,83 +1,8 @@
-/**
- * @file Firestore Security Rules
- * @description This ruleset allows any logged-in user full access to all data. This is intended for rapid prototyping and should be replaced with more restrictive rules in a production environment.
- * @dataStructure
- *   - /products/{productId}: Stores product information.
- *   - /labels/{labelId}: Stores label information.
- *   - /command_logs/{commandLogId}: Stores command logs.
- *   - /themes/{themeId}: Stores theme information.
- *   - /product_label_designs/{designLinkId}: Stores links between products, labels, and designs.
- * @keySecurityDecisions
- *   - All authenticated users have full read and write access.
- *   - No schema validation is performed in this prototype ruleset.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * @description Grants all authenticated users full access to product data.
-     * @path /products/{productId}
-     * @allow (create, update, delete, get, list) - Any logged-in user can create, update, delete, retrieve, and list products.
-     * @deny (none) - No requests are denied in this prototype.
-     * @principle Allows any authenticated user to fully manage product data for prototyping purposes.
-     */
-    match /products/{productId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
-    }
-
-    /**
-     * @description Grants all authenticated users full access to label data.
-     * @path /labels/{labelId}
-     * @allow (create, update, delete, get, list) - Any logged-in user can create, update, delete, retrieve, and list labels.
-     * @deny (none) - No requests are denied in this prototype.
-     * @principle Allows any authenticated user to fully manage label data for prototyping purposes.
-     */
-    match /labels/{labelId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
-    }
-
-    /**
-     * @description Grants all authenticated users full access to command log data.
-     * @path /command_logs/{commandLogId}
-     * @allow (create, update, delete, get, list) - Any logged-in user can create, update, delete, retrieve, and list command logs.
-     * @deny (none) - No requests are denied in this prototype.
-     * @principle Allows any authenticated user to fully manage command log data for prototyping purposes.
-     */
-    match /command_logs/{commandLogId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
-    }
-
-    /**
-     * @description Grants all authenticated users full access to theme data.
-     * @path /themes/{themeId}
-     * @allow (create, update, delete, get, list) - Any logged-in user can create, update, delete, retrieve, and list themes.
-     * @deny (none) - No requests are denied in this prototype.
-     * @principle Allows any authenticated user to fully manage theme data for prototyping purposes.
-     */
-    match /themes/{themeId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
-    }
-
-      /**
-       * @description Grants all authenticated users full access to product label design data.
-       * @path /product_label_designs/{designLinkId}
-       * @allow (create, update, delete, get, list) - Any logged-in user can create, update, delete, retrieve, and list product label designs.
-       * @deny (none) - No requests are denied in this prototype.
-       * @principle Allows any authenticated user to fully manage product label design data for prototyping purposes.
-       */
-    match /product_label_designs/{designLinkId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
-    }
-
-    // Helper function to check if the user is signed in
-    function isSignedIn() {
-      return request.auth != null;
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
