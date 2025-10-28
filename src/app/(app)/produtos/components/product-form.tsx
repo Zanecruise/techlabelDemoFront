@@ -93,14 +93,6 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
   };
 
   const getFinalDesignData = (data: ProductFormData): Record<string, any> => {
-      if (data.selectedDesign === '1') {
-          return {
-              product_name: data.name,
-              price: data.price,
-              sku: data.sku,
-              date: data.date,
-          };
-      }
       return data.designData;
   }
 

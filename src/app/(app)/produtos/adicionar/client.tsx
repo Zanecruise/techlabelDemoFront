@@ -1,8 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useFirestore, setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { useFirestore, setDocumentNonBlocking, updateDocumentNonBlocking, getDocument } from '@/firebase';
+import { collection, doc, getDoc } from 'firebase/firestore';
 import ProductForm from '../components/product-form';
 import { type ProductFormData } from '../components/product-form';
 
@@ -53,7 +53,28 @@ export default function AdicionarProdutoClient() {
         }, { merge: true });
     }
 
-     // 4. Log the creation
+    // 4. Update the sync collection
+    if (data.selectedLabelId) {
+        const labelSnap = await getDoc(doc(firestore, 'labels', data.selectedLabelId));
+        if (labelSnap.exists() && labelSnap.data().macAddress) {
+            const macAddress = labelSnap.data().macAddress;
+            const syncRef = doc(firestore, 'label_sync', macAddress);
+            const templateId = data.selectedDesign === 'template-1' ? 1 : data.selectedDesign;
+
+            const syncData = {
+                macAddress: macAddress,
+                productId: newProductRef.id,
+                labelId: data.selectedLabelId,
+                updatedAt: new Date().toISOString(),
+                template: templateId,
+                templateModel: data.designData,
+                ...productData
+            };
+            await setDocumentNonBlocking(syncRef, syncData, { merge: true });
+        }
+    }
+
+     // 5. Log the creation
     const commandLogsCollection = collection(firestore, 'command_logs');
     const logRef = doc(commandLogsCollection);
     await setDocumentNonBlocking(logRef, {

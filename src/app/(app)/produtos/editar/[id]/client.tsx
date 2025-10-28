@@ -1,7 +1,7 @@
 'use client';
 
-import { useFirestore, useDoc, updateDocumentNonBlocking, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
-import { doc, collection } from 'firebase/firestore';
+import { useFirestore, useDoc, updateDocumentNonBlocking, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking, getDocument } from '@/firebase';
+import { doc, collection, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -84,9 +84,9 @@ export default function EditarProdutoClient({ productId }: { productId: string }
         await updateDocumentNonBlocking(oldLabelRef, { productId: null });
         
         // Remove old sync doc
-        const oldLabelDoc = await useDoc(doc(firestore, 'labels', originalLabelId));
-        if(oldLabelDoc.data?.macAddress) {
-            const oldSyncRef = doc(firestore, 'label_sync', oldLabelDoc.data.macAddress);
+        const oldLabelDoc = await getDoc(doc(firestore, 'labels', originalLabelId));
+        if(oldLabelDoc.exists() && oldLabelDoc.data()?.macAddress) {
+            const oldSyncRef = doc(firestore, 'label_sync', oldLabelDoc.data().macAddress);
             await deleteDocumentNonBlocking(oldSyncRef);
         }
       }
@@ -109,14 +109,17 @@ export default function EditarProdutoClient({ productId }: { productId: string }
     }
     
     // 4. Update the sync collection
-    if (data.selectedLabelId && labelData?.macAddress) {
-        const syncRef = doc(firestore, 'label_sync', labelData.macAddress);
+    const currentLabelData = data.selectedLabelId ? (await getDoc(doc(firestore, 'labels', data.selectedLabelId))).data() : null;
+    if (data.selectedLabelId && currentLabelData?.macAddress) {
+        const syncRef = doc(firestore, 'label_sync', currentLabelData.macAddress);
+        const templateId = data.selectedDesign === 'template-1' ? 1 : data.selectedDesign;
+
         const syncData = {
-            macAddress: labelData.macAddress,
+            macAddress: currentLabelData.macAddress,
             productId: productId,
             labelId: data.selectedLabelId,
             updatedAt: new Date().toISOString(),
-            template: data.selectedDesign,
+            template: templateId,
             templateModel: data.designData,
             ...productUpdateData
         };
@@ -125,7 +128,7 @@ export default function EditarProdutoClient({ productId }: { productId: string }
 
 
     // 5. Log the edit
-    const commandLogsCollection = doc(collection(firestore, 'command_logs'), crypto.randomUUID());
+    const commandLogsCollection = doc(collection(firestore, 'command_logs'));
     await setDocumentNonBlocking(commandLogsCollection, {
         command: `Edição do produto: ${data.name}`,
         details: `Produto ${data.name} (SKU: ${data.sku}) foi atualizado.`,
