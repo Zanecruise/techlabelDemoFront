@@ -51,13 +51,13 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
   // Fetch available (unassigned) labels + the one currently assigned to this product (if editing)
   const availableLabelsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    const conditions = [null];
-    if (productId) {
-      conditions.push(productId);
+    const conditions: (string | null)[] = [null];
+    if (initialData?.selectedLabelId) {
+      conditions.push(initialData.selectedLabelId);
     }
-    // Using `any` because `in` queries with `null` can be tricky with types
-    return query(collection(firestore, 'labels'), where('productId', 'in', conditions as any[]));
-  }, [firestore, productId]);
+    // Query for labels that have no productId or have the same productId as the one being edited.
+     return query(collection(firestore, 'labels'), where('productId', 'in', conditions));
+  }, [firestore, initialData?.selectedLabelId]);
   
   const { data: availableLabels, isLoading: isLoadingLabels } = useCollection(availableLabelsQuery);
 
@@ -92,13 +92,29 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
       }));
   };
 
+  const getFinalDesignData = (data: ProductFormData): Record<string, any> => {
+      if (data.selectedDesign === 'design-1') {
+          return {
+              product_name: data.name,
+              price: data.price,
+              sku: data.sku,
+              date: data.date,
+          };
+      }
+      return data.designData;
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.price || !formData.sku) {
       alert('Por favor, preencha os campos Nome, Preço e SKU.');
       return;
     }
-    onSubmit(formData);
+    const finalData = {
+        ...formData,
+        designData: getFinalDesignData(formData),
+    };
+    onSubmit(finalData);
   };
   
   return (

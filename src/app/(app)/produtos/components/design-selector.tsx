@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
 const designs = [
-  { id: 'design-1', name: 'Padrão', imageUrl: 'https://picsum.photos/seed/d1/200/120', fields: ['linha1', 'linha2'] },
+  { id: 'design-1', name: 'Padrão', imageUrl: 'https://storage.googleapis.com/proud-ground-427913-g7.appspot.com/6a1005af-7299-4786-8d69-3c7bf4869c9b.png', fields: [] }, // No extra fields needed, uses main product data
   { id: 'design-2', name: 'Promoção', imageUrl: 'https://picsum.photos/seed/d2/200/120', fields: ['preco_antigo', 'preco_novo'] },
   { id: 'design-3', name: 'Informativo', imageUrl: 'https://picsum.photos/seed/d3/200/120', fields: ['titulo', 'info'] },
   { id: 'design-4', name: 'Minimalista', imageUrl: 'https://picsum.photos/seed/d4/200/120', fields: ['produto'] },
@@ -47,14 +47,14 @@ export default function DesignSelector({ selectedDesign, designData, onDesignSel
                 alt={design.name}
                 width={200}
                 height={120}
-                className="w-full h-auto object-cover"
+                className="w-full h-auto object-cover aspect-[5/3]"
               />
               <p className="text-center text-sm font-medium p-2 bg-muted/50">{design.name}</p>
             </div>
           ))}
         </div>
 
-        {selectedDesignDetails && (
+        {selectedDesignDetails && selectedDesignDetails.fields.length > 0 && (
           <div className="space-y-4 pt-4 border-t">
             <h4 className="font-semibold text-lg">Dados para o Design: {selectedDesignDetails.name}</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -71,6 +71,12 @@ export default function DesignSelector({ selectedDesign, designData, onDesignSel
                 ))}
             </div>
           </div>
+        )}
+
+        {selectedDesignDetails && selectedDesignDetails.fields.length === 0 && (
+            <div className="text-center text-muted-foreground py-4 border-t">
+                <p>Este design utiliza os dados principais do produto (Nome, Preço, SKU, etc.).</p>
+            </div>
         )}
       </CardContent>
     </Card>
