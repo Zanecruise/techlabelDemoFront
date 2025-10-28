@@ -68,7 +68,6 @@ export default function AdicionarProdutoClient() {
                 updatedAt: new Date().toISOString(),
                 template: templateId,
                 templateModel: data.designData,
-                ...productData
             };
             await setDocumentNonBlocking(syncRef, syncData, { merge: true });
         }

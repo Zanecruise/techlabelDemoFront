@@ -121,7 +121,6 @@ export default function EditarProdutoClient({ productId }: { productId: string }
             updatedAt: new Date().toISOString(),
             template: templateId,
             templateModel: data.designData,
-            ...productUpdateData
         };
         await setDocumentNonBlocking(syncRef, syncData, { merge: true });
     }
