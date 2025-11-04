@@ -7,12 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
 const designs = [
-  { id: 'template-1', name: 'Template 1', imageUrl: '/images/design1.png', fields: ['product_name', 'price', 'sku', 'date'] },
-  { id: 'template-2', name: 'Template 2', imageUrl: '/images/design2.png', fields: ['product_name', 'promo_price', 'price', 'discount_percentage'] },
-  { id: 'template-3', name: 'Template 3', imageUrl: '/images/design3.png', fields: ['product_name', 'price', 'info', 'qr_code_data'] },
-  { id: 'template-4', name: 'Template 4', imageUrl: '/images/design4.png', fields: ['product_name', 'price', 'unit_price'] },
-  { id: 'template-5', name: 'Template 5', imageUrl: '/images/design5.png', fields: ['product_name', 'price', 'column1_title', 'column1_value', 'column2_title', 'column2_value'] },
-  { id: 'template-6', name: 'Template 6', imageUrl: '/images/design6.png', fields: ['product_name', 'price'] },
+  { id: 'template-1', name: 'Template 1', imageUrl: '/images/template1.jpg', fields: ['Nome do Produto', 'Valor', 'SKU', 'Data'] },
+  { id: 'template-2', name: 'Template 2', imageUrl: '/images/template2.jpg', fields: ['Nome do Produto', 'Valor', 'SKU', 'Data', 'Unidade de Medida'] },
+  { id: 'template-3', name: 'Template 3', imageUrl: '/images/template3.jpg', fields: ['Nome do Produto', 'Valor', 'Marca', 'texto1', 'texto2'] },
+  { id: 'template-4', name: 'Template 4', imageUrl: '/images/template4.jpg', fields: ['Nome do Produto', 'Valor', 'Marca', 'texto1', 'texto2', 'Valor Promocional'] },
+  { id: 'template-5', name: 'Template 5', imageUrl: '/images/template5.jpg', fields: ['texto1'] },
+  { id: 'template-6', name: 'Template 6', imageUrl: '/images/template6.jpg', fields: ['texto1'] },
+  { id: 'template-7', name: 'Template 7', imageUrl: '/images/template7.jpg', fields: ['texto1', 'texto2'] },
+  { id: 'template-8', name: 'Template 8', imageUrl: '/images/template8.jpg', fields: ['texto1', 'texto2'] }
 ];
 
 interface DesignSelectorProps {
@@ -32,7 +34,7 @@ export default function DesignSelector({ selectedDesign, designData, onDesignSel
         <CardTitle>Design da Etiqueta</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {designs.map(design => (
             <div
               key={design.id}
@@ -63,7 +65,7 @@ export default function DesignSelector({ selectedDesign, designData, onDesignSel
                     <Label htmlFor={`design-data-${field}`}>{field.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase())}</Label>
                     <Input
                     id={`design-data-${field}`}
-                    placeholder={`Insira o valor para ${field}`}
+                    placeholder={`Insira o Valor para ${field}`}
                     value={designData[field] || ''}
                     onChange={(e) => onDataChange(field, e.target.value)}
                     />
