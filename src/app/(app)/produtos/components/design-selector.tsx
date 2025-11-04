@@ -7,12 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
 const designs = [
-  { id: 'template-1', name: 'Template 1', imageUrl: '/desing1.png', fields: ['product_name', 'price', 'sku', 'date'] },
-  { id: 'design-2', name: 'Promoção', imageUrl: 'https://picsum.photos/seed/d2/200/120', fields: ['preco_antigo', 'preco_novo'] },
-  { id: 'design-3', name: 'Informativo', imageUrl: 'https://picsum.photos/seed/d3/200/120', fields: ['titulo', 'info'] },
-  { id: 'design-4', name: 'Minimalista', imageUrl: 'https://picsum.photos/seed/d4/200/120', fields: ['produto'] },
-  { id: 'design-5', name: 'Código QR', imageUrl: 'https://picsum.photos/seed/d5/200/120', fields: ['qr_code_data'] },
-  { id: 'design-6', name: 'Duas Colunas', imageUrl: 'https://picsum.photos/seed/d6/200/120', fields: ['coluna1', 'coluna2'] },
+  { id: 'template-1', name: 'Template 1', imageUrl: '/images/desing1.png', fields: ['product_name', 'price', 'sku', 'date'] },
+  { id: 'template-2', name: 'Template 2', imageUrl: '/images/desing2.png', fields: ['product_name', 'promo_price', 'price', 'discount_percentage'] },
+  { id: 'template-3', name: 'Template 3', imageUrl: '/images/desing3.png', fields: ['product_name', 'price', 'info', 'qr_code_data'] },
+  { id: 'template-4', name: 'Template 4', imageUrl: '/images/desing4.png', fields: ['product_name', 'price', 'unit_price'] },
+  { id: 'template-5', name: 'Template 5', imageUrl: '/images/desing5.png', fields: ['product_name', 'price', 'column1_title', 'column1_value', 'column2_title', 'column2_value'] },
+  { id: 'template-6', name: 'Template 6', imageUrl: '/images/desing6.png', fields: ['product_name', 'price'] },
 ];
 
 interface DesignSelectorProps {
@@ -71,12 +71,6 @@ export default function DesignSelector({ selectedDesign, designData, onDesignSel
                 ))}
             </div>
           </div>
-        )}
-
-        {selectedDesignDetails && selectedDesignDetails.fields.length === 0 && (
-            <div className="text-center text-muted-foreground py-4 border-t">
-                <p>Este design utiliza os dados principais do produto (Nome, Preço, SKU, etc.).</p>
-            </div>
         )}
       </CardContent>
     </Card>
