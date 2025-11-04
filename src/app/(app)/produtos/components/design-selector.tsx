@@ -49,7 +49,7 @@ export default function DesignSelector({ selectedDesign, designData, onDesignSel
                 alt={design.name}
                 width={200}
                 height={120}
-                className="w-full h-auto object-cover aspect-[5/3]"
+                className="w-full h-auto object-contain aspect-[5/3] bg-white"
               />
               <p className="text-center text-sm font-medium p-2 bg-muted/50">{design.name}</p>
             </div>
