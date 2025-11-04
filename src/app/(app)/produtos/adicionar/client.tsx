@@ -28,6 +28,7 @@ export default function AdicionarProdutoClient() {
       brand: data.brand,
       promoPrice: data.promoPrice,
       proportionalValue: data.proportionalValue,
+      unitOfMeasure: data.unitOfMeasure,
       date: data.date,
       gtin: data.gtin,
       labelId: data.selectedLabelId,

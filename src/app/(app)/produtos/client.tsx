@@ -86,6 +86,7 @@ export default function ProdutosClient() {
                 <TableHead>Nome</TableHead>
                 <TableHead>SKU</TableHead>
                 <TableHead>Preço</TableHead>
+                <TableHead>Unidade de Medida</TableHead>
                 <TableHead>Etiqueta (MAC)</TableHead>
                 <TableHead className="w-16 text-center">Editar</TableHead>
                 <TableHead className="w-16 text-center">Inativar</TableHead>
@@ -107,6 +108,7 @@ export default function ProdutosClient() {
                     </div>
                   </TableCell>
                   <TableCell>R$ {product.price}</TableCell>
+                  <TableCell>{product.unitOfMeasure || <span className="text-muted-foreground">N/A</span>}</TableCell>
                   <TableCell>{product.labelId ? getLabelMacAddress(product.labelId) : <span className="text-muted-foreground">N/A</span>}</TableCell>
                   <TableCell className="text-center">
                     <Button asChild variant="ghost" size="icon">

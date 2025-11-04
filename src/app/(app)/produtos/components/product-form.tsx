@@ -17,6 +17,7 @@ export interface ProductFormData {
     price: number;
     promoPrice?: number;
     proportionalValue: string;
+    unitOfMeasure: string;
     date: string;
     gtin: string;
     selectedLabelId: string | null;
@@ -41,6 +42,7 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
     price: 0,
     promoPrice: undefined,
     proportionalValue: '',
+    unitOfMeasure: '',
     date: '',
     gtin: '',
     selectedLabelId: null,
@@ -93,6 +95,14 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
   };
 
   const getFinalDesignData = (data: ProductFormData): Record<string, any> => {
+      if (data.selectedDesign === 'template-1' && Object.keys(data.designData).length === 0) {
+        return {
+            product_name: data.name,
+            price: data.price,
+            sku: data.sku,
+            date: data.date,
+        }
+      }
       return data.designData;
   }
 
@@ -130,14 +140,18 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+               <div className="space-y-2">
                 <Label htmlFor="brand">Marca</Label>
                 <Input id="brand" placeholder="Marca" value={formData.brand} onChange={handleChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="sku">SKU</Label>
                 <Input id="sku" placeholder="000000" value={formData.sku} onChange={handleChange} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="unitOfMeasure">Unidade de Medida</Label>
+                <Input id="unitOfMeasure" placeholder="Ex: kg, L, Un" value={formData.unitOfMeasure} onChange={handleChange} />
               </div>
             </div>
 

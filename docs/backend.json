@@ -36,6 +36,10 @@
         "proportionalValue": {
             "type": "string"
         },
+        "unitOfMeasure": {
+          "type": "string",
+          "description": "Unit of measure for the product (e.g., kg, L, unit)."
+        },
         "date": {
             "type": "string",
             "format": "date"
