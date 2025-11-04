@@ -94,29 +94,13 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
       }));
   };
 
-  const getFinalDesignData = (data: ProductFormData): Record<string, any> => {
-      if (data.selectedDesign === 'template-1' && Object.keys(data.designData).length === 0) {
-        return {
-            product_name: data.name,
-            price: data.price,
-            sku: data.sku,
-            date: data.date,
-        }
-      }
-      return data.designData;
-  }
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.price || !formData.sku) {
       alert('Por favor, preencha os campos Nome, Preço e SKU.');
       return;
     }
-    const finalData = {
-        ...formData,
-        designData: getFinalDesignData(formData),
-    };
-    onSubmit(finalData);
+    onSubmit(formData);
   };
   
   return (
