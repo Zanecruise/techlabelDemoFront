@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
-import DesignSelector, { designs } from './design-selector';
+import DesignSelector from './design-selector';
+import { designs } from '@/lib/designs';
 
 export interface ProductFormData {
     name: string;
