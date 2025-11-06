@@ -60,7 +60,7 @@ export default function AdicionarProdutoClient() {
         if (labelSnap.exists() && labelSnap.data().macAddress) {
             const macAddress = labelSnap.data().macAddress;
             const syncRef = doc(firestore, 'label_sync', macAddress);
-            const templateId = data.selectedDesign === 'template-1' ? 1 : data.selectedDesign;
+            const templateId = data.selectedDesign ? parseInt(data.selectedDesign.replace('template-', '')) : null;
 
             const syncData = {
                 macAddress: macAddress,

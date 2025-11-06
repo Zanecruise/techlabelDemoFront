@@ -49,6 +49,13 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
     selectedDesign: null,
     designData: {},
   });
+  
+  // Set form data when initialData changes
+  useEffect(() => {
+      if(initialData) {
+          setFormData(initialData);
+      }
+  }, [initialData])
 
   // Fetch available (unassigned) labels + the one currently assigned to this product (if editing)
   const availableLabelsQuery = useMemoFirebase(() => {

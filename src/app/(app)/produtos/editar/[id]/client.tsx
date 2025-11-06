@@ -25,19 +25,18 @@ export default function EditarProdutoClient({ productId }: { productId: string }
   }, [firestore, productId, productData?.labelId]);
   const { data: designData, isLoading: isLoadingDesign } = useDoc(designQuery);
   
-  // Fetch label to get macAddress
-  const labelRef = useMemoFirebase(() => {
-    if (!firestore || !productData?.labelId) return null;
-    return doc(firestore, 'labels', productData.labelId);
-  }, [firestore, productData?.labelId]);
-  const { data: labelData } = useDoc(labelRef);
-
-
   const [initialData, setInitialData] = useState<ProductFormData | undefined>();
   const [originalLabelId, setOriginalLabelId] = useState<string | null>(null);
 
+  // CRITICAL: Reset state when navigating to a new product page
   useEffect(() => {
-    if (productData) {
+    setInitialData(undefined);
+    setOriginalLabelId(null);
+  }, [productId]);
+  
+  useEffect(() => {
+    // Only set data if productData exists and initialData is not yet set for the current productId
+    if (productData && initialData === undefined) {
       setInitialData({
           name: productData.name || '',
           brand: productData.brand || '',
@@ -54,7 +53,7 @@ export default function EditarProdutoClient({ productId }: { productId: string }
       });
       setOriginalLabelId(productData.labelId || null);
     }
-  }, [productData, designData]);
+  }, [productData, designData, initialData, productId]);
 
   const handleSubmit = async (data: ProductFormData) => {
     if (!productRef || !firestore) {
@@ -111,20 +110,22 @@ export default function EditarProdutoClient({ productId }: { productId: string }
     }
     
     // 4. Update the sync collection
-    const currentLabelData = data.selectedLabelId ? (await getDoc(doc(firestore, 'labels', data.selectedLabelId))).data() : null;
-    if (data.selectedLabelId && currentLabelData?.macAddress) {
-        const syncRef = doc(firestore, 'label_sync', currentLabelData.macAddress);
-        const templateId = data.selectedDesign === 'template-1' ? 1 : data.selectedDesign;
+    if (data.selectedLabelId) {
+        const currentLabelData = (await getDoc(doc(firestore, 'labels', data.selectedLabelId))).data();
+        if (currentLabelData?.macAddress) {
+            const syncRef = doc(firestore, 'label_sync', currentLabelData.macAddress);
+            const templateId = data.selectedDesign ? parseInt(data.selectedDesign.replace('template-', '')) : null;
 
-        const syncData = {
-            macAddress: currentLabelData.macAddress,
-            productId: productId,
-            labelId: data.selectedLabelId,
-            updatedAt: new Date().toISOString(),
-            template: templateId,
-            templateModel: data.designData,
-        };
-        await setDocumentNonBlocking(syncRef, syncData, { merge: true });
+            const syncData = {
+                macAddress: currentLabelData.macAddress,
+                productId: productId,
+                labelId: data.selectedLabelId,
+                updatedAt: new Date().toISOString(),
+                template: templateId,
+                templateModel: data.designData,
+            };
+            await setDocumentNonBlocking(syncRef, syncData, { merge: true });
+        }
     }
 
 
