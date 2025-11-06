@@ -111,7 +111,7 @@ export default function EditarProdutoClient({ productId }: { productId: string }
             labelId: data.selectedLabelId,
             designId: data.selectedDesign,
             designData: data.designData,
-        }, { merge: true });
+        });
       } else {
         // If no design is selected for the new label, ensure any old design link is gone
         await deleteDocumentNonBlocking(designDocRef);
@@ -134,7 +134,7 @@ export default function EditarProdutoClient({ productId }: { productId: string }
                   template: data.selectedDesign,
                   templateModel: data.designData,
               };
-              await setDocumentNonBlocking(syncRef, syncData, { merge: true });
+              await setDocumentNonBlocking(syncRef, syncData);
             } else {
               // If no design selected, ensure the sync doc is deleted
               await deleteDocumentNonBlocking(syncRef);
@@ -151,7 +151,7 @@ export default function EditarProdutoClient({ productId }: { productId: string }
         timestamp: new Date().toISOString(),
         product: productId,
         label: data.selectedLabelId,
-    }, { merge: true });
+    });
 
     router.push('/produtos');
   };

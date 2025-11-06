@@ -34,12 +34,12 @@ export default function AdicionarProdutoClient() {
       labelId: data.selectedLabelId,
     };
 
-    await setDocumentNonBlocking(newProductRef, productData, { merge: true });
+    await setDocumentNonBlocking(newProductRef, productData);
 
     // 2. If a label was selected, update the label to link it to the new product
     if (data.selectedLabelId) {
         const labelRef = doc(firestore, 'labels', data.selectedLabelId);
-        updateDocumentNonBlocking(labelRef, { productId: newProductRef.id });
+        await updateDocumentNonBlocking(labelRef, { productId: newProductRef.id });
     }
     
     // 3. Save the label design if selected
@@ -51,11 +51,11 @@ export default function AdicionarProdutoClient() {
             labelId: data.selectedLabelId,
             designId: data.selectedDesign,
             designData: data.designData,
-        }, { merge: true });
+        });
     }
 
     // 4. Update the sync collection
-    if (data.selectedLabelId) {
+    if (data.selectedLabelId && data.selectedDesign) {
         const labelSnap = await getDoc(doc(firestore, 'labels', data.selectedLabelId));
         if (labelSnap.exists() && labelSnap.data().macAddress) {
             const macAddress = labelSnap.data().macAddress;
@@ -69,7 +69,7 @@ export default function AdicionarProdutoClient() {
                 template: data.selectedDesign,
                 templateModel: data.designData,
             };
-            await setDocumentNonBlocking(syncRef, syncData, { merge: true });
+            await setDocumentNonBlocking(syncRef, syncData);
         }
     }
 
@@ -82,7 +82,7 @@ export default function AdicionarProdutoClient() {
         timestamp: new Date().toISOString(),
         product: newProductRef.id,
         label: data.selectedLabelId
-    }, { merge: true });
+    });
     
     router.push('/produtos');
   };
