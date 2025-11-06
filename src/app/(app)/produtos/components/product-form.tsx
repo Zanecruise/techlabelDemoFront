@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
-import DesignSelector from './design-selector';
+import DesignSelector, { designs } from './design-selector';
 
 export interface ProductFormData {
     name: string;
@@ -107,7 +108,25 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
       alert('Por favor, preencha os campos Nome, Preço e SKU.');
       return;
     }
-    onSubmit(formData);
+
+    let finalDesignData = { ...formData.designData };
+
+    // Ensure all fields for the selected design are present in the final data
+    if (formData.selectedDesign) {
+      const designDetails = designs.find(d => d.id === formData.selectedDesign);
+      if (designDetails) {
+        designDetails.fields.forEach(field => {
+          if (!(field in finalDesignData)) {
+            finalDesignData[field] = ''; // Add the field with an empty string if it's missing
+          }
+        });
+      }
+    }
+    
+    onSubmit({
+      ...formData,
+      designData: finalDesignData,
+    });
   };
   
   return (
