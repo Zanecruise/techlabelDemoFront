@@ -1,11 +1,11 @@
 
 export const designs = [
-    { id: 'template-1', name: 'Template Padrão', imageUrl: '/images/template1.jpg', fields: ['Nome do Produto', 'Valor', 'SKU', 'Data'] },
-    { id: 'template-2', name: 'Template Promoção', imageUrl: '/images/template2.jpg', fields: ['Nome do Produto', 'Valor Original', 'Valor Promocional', 'Desconto'] },
-    { id: 'template-3', name: 'Template QR Code', imageUrl: '/images/template3.jpg', fields: ['Nome do Produto', 'Valor', 'Info', 'QR Code Data'] },
-    { id: 'template-4', name: 'Template Nutricional', imageUrl: '/images/template4.jpg', fields: ['Nome do Produto', 'Valor', 'Valor por Unidade'] },
-    { id: 'template-5', name: 'Template Colunas', imageUrl: '/images/template5.jpg', fields: ['Nome do Produto', 'Valor', 'Info Coluna 1', 'Info Coluna 2'] },
-    { id: 'template-6', name: 'Template Minimalista', imageUrl: '/images/template6.jpg', fields: ['Nome do Produto', 'Valor'] },
-    { id: 'template-7', name: 'Template com Imagem', imageUrl: '/images/template7.jpg', fields: ['Nome do Produto', 'Valor', 'URL da Imagem'] },
-    { id: 'template-8', name: 'Template de Alerta', imageUrl: '/images/template8.jpg', fields: ['Nome do Produto', 'Valor', 'Mensagem de Alerta'] },
+  { id: 'template-1', name: 'Template 1', imageUrl: '/images/template1.jpg', fields: ['Nome do Produto', 'Valor', 'SKU', 'Data', 'Unidade de Medida'] },
+  { id: 'template-2', name: 'Template 2', imageUrl: '/images/template2.jpg', fields: ['Nome do Produto', 'Valor', 'SKU', 'Data', 'Unidade de Medida'] },
+  { id: 'template-3', name: 'Template 3', imageUrl: '/images/template3.jpg', fields: ['Nome do Produto', 'Valor', 'Marca', 'texto1', 'texto2'] },
+  { id: 'template-4', name: 'Template 4', imageUrl: '/images/template4.jpg', fields: ['Nome do Produto', 'Valor', 'Marca', 'texto1', 'texto2', 'Valor Promocional'] },
+  { id: 'template-5', name: 'Template 5', imageUrl: '/images/template5.jpg', fields: ['texto1'] },
+  { id: 'template-6', name: 'Template 6', imageUrl: '/images/template6.jpg', fields: ['texto1'] },
+  { id: 'template-7', name: 'Template 7', imageUrl: '/images/template7.jpg', fields: ['texto1', 'texto2'] },
+  { id: 'template-8', name: 'Template 8', imageUrl: '/images/template8.jpg', fields: ['texto1', 'texto2'] }
 ];
