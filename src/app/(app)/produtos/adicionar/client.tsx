@@ -60,14 +60,13 @@ export default function AdicionarProdutoClient() {
         if (labelSnap.exists() && labelSnap.data().macAddress) {
             const macAddress = labelSnap.data().macAddress;
             const syncRef = doc(firestore, 'label_sync', macAddress);
-            const templateId = data.selectedDesign ? parseInt(data.selectedDesign.replace('template-', '')) : null;
-
+            
             const syncData = {
                 macAddress: macAddress,
                 productId: newProductRef.id,
                 labelId: data.selectedLabelId,
                 updatedAt: new Date().toISOString(),
-                template: templateId,
+                template: data.selectedDesign,
                 templateModel: data.designData,
             };
             await setDocumentNonBlocking(syncRef, syncData, { merge: true });

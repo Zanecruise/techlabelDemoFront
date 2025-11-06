@@ -90,6 +90,10 @@ export default function EditarProdutoClient({ productId }: { productId: string }
             const oldSyncRef = doc(firestore, 'label_sync', oldLabelDoc.data().macAddress);
             await deleteDocumentNonBlocking(oldSyncRef);
         }
+
+        // Also delete the old design link
+        const oldDesignDocRef = doc(firestore, 'product_label_designs', `${productId}_${originalLabelId}`);
+        await deleteDocumentNonBlocking(oldDesignDocRef);
       }
       // Link the new label if one was selected
       if (data.selectedLabelId) {
@@ -98,33 +102,43 @@ export default function EditarProdutoClient({ productId }: { productId: string }
       }
     }
     
-    // 3. Save the label design
-    if (data.selectedLabelId && data.selectedDesign) {
-        const designDocRef = doc(firestore, 'product_label_designs', `${productId}_${data.selectedLabelId}`);
+    // 3. Save the label design (or delete if no design)
+    if (data.selectedLabelId) {
+      const designDocRef = doc(firestore, 'product_label_designs', `${productId}_${data.selectedLabelId}`);
+      if (data.selectedDesign) {
         await setDocumentNonBlocking(designDocRef, {
             productId: productId,
             labelId: data.selectedLabelId,
             designId: data.selectedDesign,
             designData: data.designData,
         }, { merge: true });
+      } else {
+        // If no design is selected for the new label, ensure any old design link is gone
+        await deleteDocumentNonBlocking(designDocRef);
+      }
     }
     
-    // 4. Update the sync collection
+    // 4. Update the sync collection (create/update or delete)
     if (data.selectedLabelId) {
         const currentLabelData = (await getDoc(doc(firestore, 'labels', data.selectedLabelId))).data();
         if (currentLabelData?.macAddress) {
             const syncRef = doc(firestore, 'label_sync', currentLabelData.macAddress);
-            const templateId = data.selectedDesign ? parseInt(data.selectedDesign.replace('template-', '')) : null;
 
-            const syncData = {
-                macAddress: currentLabelData.macAddress,
-                productId: productId,
-                labelId: data.selectedLabelId,
-                updatedAt: new Date().toISOString(),
-                template: templateId,
-                templateModel: data.designData,
-            };
-            await setDocumentNonBlocking(syncRef, syncData, { merge: true });
+            // Only create/update sync doc if there's a design
+            if (data.selectedDesign) {
+              const syncData = {
+                  macAddress: currentLabelData.macAddress,
+                  productId: productId,
+                  labelId: data.selectedLabelId,
+                  updatedAt: new Date().toISOString(),
+                  template: data.selectedDesign,
+                  templateModel: data.designData,
+              };
+              await setDocumentNonBlocking(syncRef, syncData, { merge: true });
+            } else {
+              // If no design selected, ensure the sync doc is deleted
+              await deleteDocumentNonBlocking(syncRef);
+            }
         }
     }
 
