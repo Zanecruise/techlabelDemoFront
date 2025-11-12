@@ -36,7 +36,7 @@ export default function EditarProdutoClient({ productId }: { productId: string }
   
   useEffect(() => {
     // Only set data if productData exists and initialData is not yet set for the current productId
-    if (productData && initialData === undefined) {
+    if (productData && !isLoadingDesign && initialData === undefined) {
       setInitialData({
           name: productData.name || '',
           brand: productData.brand || '',
@@ -53,7 +53,7 @@ export default function EditarProdutoClient({ productId }: { productId: string }
       });
       setOriginalLabelId(productData.labelId || null);
     }
-  }, [productData, designData, initialData, productId]);
+  }, [productData, designData, initialData, productId, isLoadingDesign]);
 
   const handleSubmit = async (data: ProductFormData) => {
     if (!productRef || !firestore) {
@@ -156,7 +156,7 @@ export default function EditarProdutoClient({ productId }: { productId: string }
     router.push('/produtos');
   };
 
-  if (isLoadingProduct || isLoadingDesign || !initialData) {
+  if (isLoadingProduct || !initialData) {
     return (
       <div className="flex justify-center items-center h-full">
         <Loader2 className="animate-spin h-10 w-10 text-primary" />
