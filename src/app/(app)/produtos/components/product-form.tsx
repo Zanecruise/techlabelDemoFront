@@ -59,7 +59,7 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
       }
   }, [initialData])
 
-  // Automatically sync product name, brand, and SKU with design data fields
+  // Automatically sync product name, brand, SKU and date with design data fields
   useEffect(() => {
     if (!formData.selectedDesign) return;
 
@@ -81,11 +81,16 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
       newDesignData.sku = formData.sku;
       hasChanged = true;
     }
+    if (designDetails.fields.includes('data') && newDesignData.data !== formData.date) {
+      newDesignData.data = formData.date;
+      hasChanged = true;
+    }
+
 
     if (hasChanged) {
       setFormData(prev => ({ ...prev, designData: newDesignData }));
     }
-  }, [formData.name, formData.brand, formData.sku, formData.selectedDesign, formData.designData]);
+  }, [formData.name, formData.brand, formData.sku, formData.date, formData.selectedDesign, formData.designData]);
 
 
   // Fetch available (unassigned) labels + the one currently assigned to this product (if editing)
