@@ -59,6 +59,35 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
       }
   }, [initialData])
 
+  // Automatically sync product name, brand, and SKU with design data fields
+  useEffect(() => {
+    if (!formData.selectedDesign) return;
+
+    const designDetails = designs.find(d => d.id === formData.selectedDesign);
+    if (!designDetails) return;
+
+    const newDesignData = { ...formData.designData };
+    let hasChanged = false;
+
+    if (designDetails.fields.includes('nome') && newDesignData.nome !== formData.name) {
+      newDesignData.nome = formData.name;
+      hasChanged = true;
+    }
+    if (designDetails.fields.includes('marca') && newDesignData.marca !== formData.brand) {
+      newDesignData.marca = formData.brand;
+      hasChanged = true;
+    }
+    if (designDetails.fields.includes('sku') && newDesignData.sku !== formData.sku) {
+      newDesignData.sku = formData.sku;
+      hasChanged = true;
+    }
+
+    if (hasChanged) {
+      setFormData(prev => ({ ...prev, designData: newDesignData }));
+    }
+  }, [formData.name, formData.brand, formData.sku, formData.selectedDesign, formData.designData]);
+
+
   // Fetch available (unassigned) labels + the one currently assigned to this product (if editing)
   const availableLabelsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
