@@ -4,13 +4,12 @@ import { useRouter } from 'next/navigation';
 import { useFirestore, setDocumentNonBlocking, updateDocumentNonBlocking, getDocument } from '@/firebase';
 import { collection, doc, getDoc } from 'firebase/firestore';
 import ProductForm from '../components/product-form';
-import { type ProductFormData } from '../components/product-form';
 
 export default function AdicionarProdutoClient() {
   const router = useRouter();
   const firestore = useFirestore();
   
-  const handleSubmit = async (data: ProductFormData) => {
+  const handleSubmit = async (data: { name: string; brand: string; sku: string; price: number; promoPrice?: number; proportionalValue: string; unitOfMeasure: string; date: string; gtin: string; selectedLabelId: string | null; selectedDesign: string | null; designData: Record<string, any>; }) => {
     if (!firestore) {
       alert('Ocorreu um erro de conexão. Tente novamente.');
       return;

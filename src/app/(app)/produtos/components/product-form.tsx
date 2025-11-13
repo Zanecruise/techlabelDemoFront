@@ -16,8 +16,8 @@ export interface ProductFormData {
     name: string;
     brand: string;
     sku: string;
-    price: number;
-    promoPrice?: number;
+    price: string;
+    promoPrice?: string;
     proportionalValue: string;
     unitOfMeasure: string;
     date: string;
@@ -30,9 +30,34 @@ export interface ProductFormData {
 interface ProductFormProps {
     productId?: string;
     initialData?: ProductFormData;
-    onSubmit: (data: ProductFormData) => void;
+    onSubmit: (data: Omit<ProductFormData, 'price' | 'promoPrice'> & { price: number; promoPrice?: number }) => void;
     onCancel: () => void;
 }
+
+const formatCurrency = (value: string): string => {
+    if (!value) return '';
+    let numStr = value.replace(/[^0-9]/g, '');
+    if (numStr === '') return '';
+
+    // Pad with zeros if needed
+    numStr = numStr.padStart(3, '0');
+
+    const integerPart = numStr.slice(0, -2);
+    const decimalPart = numStr.slice(-2);
+    
+    const formattedInteger = integerPart.replace(/^0+/, '') || '0';
+
+    return `${formattedInteger},${decimalPart}`;
+};
+
+const unformatCurrency = (value: string | undefined): number | undefined => {
+    if (!value) return undefined;
+    const numStr = value.replace(/[^0-9]/g, '');
+    if (numStr === '') return undefined;
+    const num = parseFloat(numStr) / 100;
+    return isNaN(num) ? undefined : num;
+}
+
 
 export default function ProductForm({ productId, initialData, onSubmit, onCancel }: ProductFormProps) {
   const firestore = useFirestore();
@@ -41,8 +66,8 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
     name: '',
     brand: '',
     sku: '',
-    price: 0,
-    promoPrice: undefined,
+    price: '0,00',
+    promoPrice: '',
     proportionalValue: '',
     unitOfMeasure: '',
     date: '',
@@ -55,7 +80,11 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
   // Set form data when initialData changes
   useEffect(() => {
       if(initialData) {
-          setFormData(initialData);
+          setFormData({
+            ...initialData,
+            price: formatCurrency((initialData.price as unknown as number * 100).toString()),
+            promoPrice: initialData.promoPrice ? formatCurrency((initialData.promoPrice as unknown as number * 100).toString()) : '',
+          });
       }
   }, [initialData])
 
@@ -106,7 +135,6 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
       hasChanged = true;
     }
 
-
     if (hasChanged) {
       setFormData(prev => ({ ...prev, designData: newDesignData }));
     }
@@ -127,11 +155,19 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
   const { data: availableLabels, isLoading: isLoadingLabels } = useCollection(availableLabelsQuery);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value, type } = e.target;
-    setFormData(prev => ({
-        ...prev,
-        [id]: type === 'number' ? (value === '' ? '' : parseFloat(value)) : value
-    }));
+    const { id, value } = e.target;
+
+    if (id === 'price' || id === 'promoPrice' || id === 'proportionalValue') {
+         setFormData(prev => ({
+            ...prev,
+            [id]: formatCurrency(value)
+        }));
+    } else {
+        setFormData(prev => ({
+            ...prev,
+            [id]: value
+        }));
+    }
   };
   
   const handleSelectChange = (value: string) => {
@@ -178,8 +214,18 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
       }
     }
     
+    const priceAsNumber = unformatCurrency(formData.price);
+    const promoPriceAsNumber = unformatCurrency(formData.promoPrice);
+
+    if(priceAsNumber === undefined){
+        alert('Preço inválido');
+        return;
+    }
+
     onSubmit({
       ...formData,
+      price: priceAsNumber,
+      promoPrice: promoPriceAsNumber,
       designData: finalDesignData,
     });
   };
@@ -223,17 +269,17 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="price">Preço</Label>
-                <Input id="price" placeholder="00,00" type="number" value={formData.price} onChange={handleChange} />
+                <Input id="price" placeholder="0,00" type="text" value={formData.price} onChange={handleChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="promoPrice">Preço promocional</Label>
-                <Input id="promoPrice" placeholder="00,00" type="number" value={formData.promoPrice || ''} onChange={handleChange} />
+                <Input id="promoPrice" placeholder="0,00" type="text" value={formData.promoPrice || ''} onChange={handleChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="proportionalValue">
                   Valor proporcional por unidade de medida
                 </Label>
-                <Input id="proportionalValue" placeholder="00,00 x kg" value={formData.proportionalValue} onChange={handleChange} />
+                <Input id="proportionalValue" placeholder="0,00" type="text" value={formData.proportionalValue} onChange={handleChange} />
               </div>
             </div>
 

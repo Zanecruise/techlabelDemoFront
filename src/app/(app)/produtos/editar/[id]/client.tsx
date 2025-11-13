@@ -41,7 +41,7 @@ export default function EditarProdutoClient({ productId }: { productId: string }
           name: productData.name || '',
           brand: productData.brand || '',
           sku: productData.sku || '',
-          price: productData.price || 0,
+          price: productData.price || '0,00',
           promoPrice: productData.promoPrice || undefined,
           proportionalValue: productData.proportionalValue || '',
           unitOfMeasure: productData.unitOfMeasure || '',
@@ -55,7 +55,7 @@ export default function EditarProdutoClient({ productId }: { productId: string }
     }
   }, [productData, designData, initialData, productId, isLoadingDesign]);
 
-  const handleSubmit = async (data: ProductFormData) => {
+  const handleSubmit = async (data: { name: string; brand: string; sku: string; price: number; promoPrice?: number; proportionalValue: string; unitOfMeasure: string; date: string; gtin: string; selectedLabelId: string | null; selectedDesign: string | null; designData: Record<string, any>; }) => {
     if (!productRef || !firestore) {
       alert('Por favor, preencha os campos obrigatórios.');
       return;
