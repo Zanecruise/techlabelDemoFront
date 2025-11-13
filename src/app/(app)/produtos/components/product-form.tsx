@@ -69,32 +69,39 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
     const newDesignData = { ...formData.designData };
     let hasChanged = false;
 
+    // Campo do formulário 'name' equivale ao field 'nome'
     if (designDetails.fields.includes('nome') && newDesignData.nome !== formData.name) {
       newDesignData.nome = formData.name;
       hasChanged = true;
     }
+    // Campo do formulário 'brand' equivale ao field 'marca'
     if (designDetails.fields.includes('marca') && newDesignData.marca !== formData.brand) {
       newDesignData.marca = formData.brand;
       hasChanged = true;
     }
+    // Campo do formulário 'sku' equivale ao field 'sku'
     if (designDetails.fields.includes('sku') && newDesignData.sku !== formData.sku) {
       newDesignData.sku = formData.sku;
       hasChanged = true;
     }
+    // Campo do formulário 'date' equivale ao field 'data'
     if (designDetails.fields.includes('data') && newDesignData.data !== formData.date) {
       newDesignData.data = formData.date;
       hasChanged = true;
     }
-    if (designDetails.fields.includes('valor') && newDesignData.valor !== formData.price) {
-      newDesignData.valor = formData.price;
+    // Campo do formulário 'price' equivale ao field 'preco'
+    if (designDetails.fields.includes('preco') && newDesignData.preco !== formData.price) {
+      newDesignData.preco = formData.price;
       hasChanged = true;
     }
-    if (designDetails.fields.includes('valorPromocional') && newDesignData.valorPromocional !== formData.promoPrice) {
-      newDesignData.valorPromocional = formData.promoPrice;
+    // Campo do formulário 'promoPrice' equivale ao field 'precoDesconto'
+    if (designDetails.fields.includes('precoDesconto') && newDesignData.precoDesconto !== formData.promoPrice) {
+      newDesignData.precoDesconto = formData.promoPrice;
       hasChanged = true;
     }
-     if (designDetails.fields.includes('unidadeDeMedida') && newDesignData.unidadeDeMedida !== formData.unitOfMeasure) {
-      newDesignData.unidadeDeMedida = formData.unitOfMeasure;
+    // Campo do formulário 'unitOfMeasure' equivale ao field 'precoKg'
+    if (designDetails.fields.includes('precoKg') && newDesignData.precoKg !== formData.unitOfMeasure) {
+      newDesignData.precoKg = formData.unitOfMeasure;
       hasChanged = true;
     }
 
