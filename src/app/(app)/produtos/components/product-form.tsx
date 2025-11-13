@@ -69,7 +69,6 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
     const newDesignData = { ...formData.designData };
     let hasChanged = false;
 
-    // Campo do formulário 'name' equivale aos fields 'nome' e 'produto'
     if (designDetails.fields.includes('nome') && newDesignData.nome !== formData.name) {
       newDesignData.nome = formData.name;
       hasChanged = true;
@@ -78,22 +77,18 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
       newDesignData.produto = formData.name;
       hasChanged = true;
     }
-    // Campo do formulário 'brand' equivale ao field 'marca'
     if (designDetails.fields.includes('marca') && newDesignData.marca !== formData.brand) {
       newDesignData.marca = formData.brand;
       hasChanged = true;
     }
-    // Campo do formulário 'sku' equivale ao field 'sku'
     if (designDetails.fields.includes('sku') && newDesignData.sku !== formData.sku) {
       newDesignData.sku = formData.sku;
       hasChanged = true;
     }
-    // Campo do formulário 'date' equivale ao field 'data'
     if (designDetails.fields.includes('data') && newDesignData.data !== formData.date) {
       newDesignData.data = formData.date;
       hasChanged = true;
     }
-    // Campo do formulário 'price' equivale aos fields 'preco' e 'precoStr'
     if (designDetails.fields.includes('preco') && newDesignData.preco !== formData.price) {
       newDesignData.preco = formData.price;
       hasChanged = true;
@@ -102,14 +97,12 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
       newDesignData.precoStr = formData.price;
       hasChanged = true;
     }
-    // Campo do formulário 'promoPrice' equivale ao field 'precoDesconto'
     if (designDetails.fields.includes('precoDesconto') && newDesignData.precoDesconto !== formData.promoPrice) {
       newDesignData.precoDesconto = formData.promoPrice;
       hasChanged = true;
     }
-    // Campo do formulário 'unitOfMeasure' equivale ao field 'precoKg'
-    if (designDetails.fields.includes('precoKg') && newDesignData.precoKg !== formData.unitOfMeasure) {
-      newDesignData.precoKg = formData.unitOfMeasure;
+    if (designDetails.fields.includes('precoKg') && newDesignData.precoKg !== formData.proportionalValue) {
+      newDesignData.precoKg = formData.proportionalValue;
       hasChanged = true;
     }
 
@@ -117,7 +110,7 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
     if (hasChanged) {
       setFormData(prev => ({ ...prev, designData: newDesignData }));
     }
-  }, [formData.name, formData.brand, formData.sku, formData.date, formData.price, formData.promoPrice, formData.unitOfMeasure, formData.selectedDesign, formData.designData]);
+  }, [formData.name, formData.brand, formData.sku, formData.date, formData.price, formData.promoPrice, formData.unitOfMeasure, formData.proportionalValue, formData.selectedDesign, formData.designData]);
 
 
   // Fetch available (unassigned) labels + the one currently assigned to this product (if editing)
