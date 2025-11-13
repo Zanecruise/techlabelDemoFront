@@ -69,9 +69,13 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
     const newDesignData = { ...formData.designData };
     let hasChanged = false;
 
-    // Campo do formulário 'name' equivale ao field 'nome'
+    // Campo do formulário 'name' equivale aos fields 'nome' e 'produto'
     if (designDetails.fields.includes('nome') && newDesignData.nome !== formData.name) {
       newDesignData.nome = formData.name;
+      hasChanged = true;
+    }
+     if (designDetails.fields.includes('produto') && newDesignData.produto !== formData.name) {
+      newDesignData.produto = formData.name;
       hasChanged = true;
     }
     // Campo do formulário 'brand' equivale ao field 'marca'
@@ -89,9 +93,13 @@ export default function ProductForm({ productId, initialData, onSubmit, onCancel
       newDesignData.data = formData.date;
       hasChanged = true;
     }
-    // Campo do formulário 'price' equivale ao field 'preco'
+    // Campo do formulário 'price' equivale aos fields 'preco' e 'precoStr'
     if (designDetails.fields.includes('preco') && newDesignData.preco !== formData.price) {
       newDesignData.preco = formData.price;
+      hasChanged = true;
+    }
+    if (designDetails.fields.includes('precoStr') && newDesignData.precoStr !== formData.price) {
+      newDesignData.precoStr = formData.price;
       hasChanged = true;
     }
     // Campo do formulário 'promoPrice' equivale ao field 'precoDesconto'
