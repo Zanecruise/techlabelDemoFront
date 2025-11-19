@@ -14,13 +14,31 @@ import {
   Pencil,
   Search,
   PlusCircle,
+  MoreHorizontal,
+  Trash2,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import Link from 'next/link';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, updateDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
+import { collection, query, where, getDoc, doc } from 'firebase/firestore';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 type Status = 'linked' | 'unlinked';
 
@@ -59,6 +77,53 @@ export default function ProdutosClient() {
   
   const isLoading = isLoadingProducts || isLoadingLabels;
 
+  const handleDelete = async (productId: string) => {
+    if (!firestore) return;
+    
+    const productRef = doc(firestore, 'products', productId);
+    const productSnap = await getDoc(productRef);
+
+    if(!productSnap.exists()) {
+        console.error("Produto não encontrado!");
+        return;
+    }
+
+    const productData = productSnap.data();
+
+    // 1. Unlink label if it exists
+    if (productData.labelId) {
+        const labelRef = doc(firestore, 'labels', productData.labelId);
+        const labelSnap = await getDoc(labelRef);
+        if(labelSnap.exists()){
+            await updateDocumentNonBlocking(labelRef, { productId: null });
+
+            // 2. Delete sync document for that label
+            if (labelSnap.data().macAddress) {
+                const syncRef = doc(firestore, 'label_sync', labelSnap.data().macAddress);
+                await deleteDocumentNonBlocking(syncRef);
+            }
+        }
+    }
+
+    // 3. Delete product_label_design document
+    if(productData.labelId){
+        const designDocRef = doc(firestore, 'product_label_designs', `${productId}_${productData.labelId}`);
+        await deleteDocumentNonBlocking(designDocRef);
+    }
+    
+    // 4. Delete product
+    await deleteDocumentNonBlocking(productRef);
+
+    // 5. Log deletion
+    const logRef = doc(collection(firestore, 'command_logs'));
+    await setDocumentNonBlocking(logRef, {
+        command: `Exclusão do produto: ${productData.name}`,
+        details: `Produto ${productData.name} (SKU: ${productData.sku}) foi excluído.`,
+        timestamp: new Date().toISOString(),
+        product: productId,
+    });
+  };
+
   if (isLoading) {
     return <div>A carregar...</div>
   }
@@ -88,9 +153,8 @@ export default function ProdutosClient() {
                 <TableHead>Preço</TableHead>
                 <TableHead>Unidade de Medida</TableHead>
                 <TableHead>Etiqueta (MAC)</TableHead>
-                <TableHead className="w-16 text-center">Editar</TableHead>
-                <TableHead className="w-16 text-center">Inativar</TableHead>
                 <TableHead className="w-24 text-center">Status</TableHead>
+                <TableHead className="w-24 text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -111,16 +175,6 @@ export default function ProdutosClient() {
                   <TableCell>{product.unitOfMeasure || <span className="text-muted-foreground">N/A</span>}</TableCell>
                   <TableCell>{product.labelId ? getLabelMacAddress(product.labelId) : <span className="text-muted-foreground">N/A</span>}</TableCell>
                   <TableCell className="text-center">
-                    <Button asChild variant="ghost" size="icon">
-                      <Link href={`/produtos/editar/${product.id}`}>
-                        <Pencil className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Checkbox />
-                  </TableCell>
-                  <TableCell className="text-center">
                     <div className="flex justify-center">
                       <div
                         className={`h-4 w-4 rounded-full border-2 ${
@@ -128,6 +182,44 @@ export default function ProdutosClient() {
                         }`}
                       />
                     </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                     <AlertDialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem asChild>
+                                    <Link href={`/produtos/editar/${product.id}`}>
+                                        <Pencil className="mr-2 h-4 w-4" />
+                                        Editar
+                                    </Link>
+                                </DropdownMenuItem>
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Excluir
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta ação não pode ser desfeita. Isto irá excluir permanentemente o produto e removerá qualquer vínculo com etiquetas.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(product.id)}>Sim, excluir</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))}
