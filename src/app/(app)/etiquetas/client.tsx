@@ -19,9 +19,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, updateDocumentNonBlocking, setDocumentNonBlocking, getDocument } from '@/firebase';
+import { collection, doc, getDoc } from 'firebase/firestore';
 
 type Status = 'linked' | 'unlinked' | 'error';
 
@@ -85,6 +96,37 @@ export default function EtiquetasClient() {
       return false;
     });
   }, [labels, products, searchTerm]);
+  
+  const handleDelete = async (label: any) => {
+    if (!firestore || !label || !label.id) return;
+
+    const labelRef = doc(firestore, 'labels', label.id);
+    
+    // 1. Unlink product if linked
+    if (label.productId) {
+        const productRef = doc(firestore, 'products', label.productId);
+        await updateDocumentNonBlocking(productRef, { labelId: null });
+    }
+
+    // 2. Delete sync document if MAC address exists
+    if (label.macAddress) {
+        const syncRef = doc(firestore, 'label_sync', label.macAddress);
+        await deleteDocumentNonBlocking(syncRef);
+    }
+    
+    // 3. Delete the label itself
+    await deleteDocumentNonBlocking(labelRef);
+
+    // 4. Log the deletion
+    const logRef = doc(collection(firestore, 'command_logs'));
+    await setDocumentNonBlocking(logRef, {
+        command: `Exclusão da etiqueta: ${label.macAddress}`,
+        details: `Etiqueta com MAC Address ${label.macAddress} foi excluída.`,
+        timestamp: new Date().toISOString(),
+        label: label.id,
+    });
+  };
+
 
   const isLoading = isLoadingLabels || isLoadingProducts;
 
@@ -142,6 +184,7 @@ export default function EtiquetasClient() {
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
+                     <AlertDialog>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">
@@ -156,12 +199,27 @@ export default function EtiquetasClient() {
                               Editar
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600 focus:text-red-600">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Excluir
-                          </DropdownMenuItem>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Excluir
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                       <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta ação não pode ser desfeita. Isto irá excluir permanentemente a etiqueta e removerá qualquer vínculo com produtos.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(label)}>Sim, excluir</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 );
