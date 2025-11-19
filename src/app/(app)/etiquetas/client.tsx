@@ -40,7 +40,13 @@ export default function EtiquetasClient() {
     return collection(firestore, 'labels');
   }, [firestore]);
 
-  const { data: labels, isLoading } = useCollection(labelsCollection);
+  const { data: labels, isLoading: isLoadingLabels } = useCollection(labelsCollection);
+
+  const productsCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'products');
+  }, [firestore]);
+  const { data: products, isLoading: isLoadingProducts } = useCollection(productsCollection);
 
   const getStatus = (label: any): Status => {
     // This is a placeholder for more complex logic
@@ -48,10 +54,40 @@ export default function EtiquetasClient() {
     return 'unlinked';
   }
 
-  const filteredLabels = labels?.filter(
-    (label: any) =>
-      (label.macAddress && label.macAddress.toLowerCase().includes(searchTerm.toLowerCase()))
-  ) || [];
+  const getLinkedProduct = (productId: string | null) => {
+    if (!productId || !products) return null;
+    return products.find((p: any) => p.id === productId);
+  }
+
+  const filteredLabels = useMemo(() => {
+    if (!labels || !products) return [];
+    if (!searchTerm) return labels;
+
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+
+    return labels.filter((label: any) => {
+      // Check MAC Address
+      if (label.macAddress && label.macAddress.toLowerCase().includes(lowerCaseSearchTerm)) {
+        return true;
+      }
+
+      // Check linked product name or SKU
+      const product = getLinkedProduct(label.productId);
+      if (product) {
+        if (product.name && product.name.toLowerCase().includes(lowerCaseSearchTerm)) {
+          return true;
+        }
+        if (product.sku && product.sku.toLowerCase().includes(lowerCaseSearchTerm)) {
+          return true;
+        }
+      }
+
+      return false;
+    });
+  }, [labels, products, searchTerm]);
+
+  const isLoading = isLoadingLabels || isLoadingProducts;
+
 
   if (isLoading) {
     return <div>A carregar...</div>;
@@ -64,7 +100,7 @@ export default function EtiquetasClient() {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Pesquisar por Endereço MAC..."
+            placeholder="Pesquisar por MAC, Nome do Produto ou SKU..."
             className="w-full pl-8"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -85,11 +121,14 @@ export default function EtiquetasClient() {
             <TableBody>
               {filteredLabels.map((label: any) => {
                 const status = getStatus(label);
+                const product = getLinkedProduct(label.productId);
                 return (
                   <TableRow key={label.id}>
                     <TableCell>{label.macAddress}</TableCell>
                     <TableCell>
-                      {label.productId || (
+                      {product ? (
+                        `${product.name} (SKU: ${product.sku})`
+                      ) : (
                         <span className="text-muted-foreground">
                           Nenhum produto vinculado
                         </span>
